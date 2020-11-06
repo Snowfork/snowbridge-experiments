@@ -69,6 +69,7 @@ abstract contract MMRVerification {
     function executeMessages(
         bytes32 blockHeader,
         bytes32 paraHeadHash,
-        bytes32[] memory messages
+        bytes32[] memory messages,
+        bytes32 mmrSiblingsProof
     ) virtual public;
 }
