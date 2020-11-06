@@ -35,11 +35,11 @@ abstract contract MMRVerification {
     /**
      * @dev Updates the current MMR root and updates the validator set. Called instead of
      *      `updateMMR` for blocks which include a validator set change commitment.
-     * @param newMmrRoot
-     * @param signatures
-     * @param bitmap
-     * @param valPubKeys
-     * @param pubKeyProof
+     * @param newMmrRoot the new proposed MMR root.
+     * @param signatures the subset of validator signatures on this MMR root.
+     * @param bitmap a bitmap indicating which validators the signatures belong to.
+     * @param valPubKeys array of new validator public keys.
+     * @param pubKeyProof merkle proof of the new validator public keys in the MMR.
      */
     function updateMMRWithValSet(
         bytes32 newMmrRoot,
@@ -51,8 +51,8 @@ abstract contract MMRVerification {
 
     /**
      * @dev Updates the set of validator public keys stored on contract.
-     * @param valPubKeys array of new validator public keys
-     * @param pubKeyProof merkle proof of the new validator public keys in the MMR
+     * @param valPubKeys array of new validator public keys.
+     * @param pubKeyProof merkle proof of the new validator public keys in the MMR.
      */
     function updateValSet(
         bytes32[] memory valPubKeys,
