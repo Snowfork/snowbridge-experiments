@@ -24,8 +24,8 @@ abstract contract MMRVerification {
      * @dev Updates the current MMR root, validating the new proposed MMR root by a
      *      subset of validator signatures. Called every time a new MMR root is available.
      * @param newMmrRoot the new proposed MMR root.
-     * @param signatures[] the subset of validator signatures on this MMR root.
-     * @param bitmap[] a bitmap indicating which validators the signatures belong to.
+     * @param signatures the subset of validator signatures on this MMR root.
+     * @param bitmap a bitmap indicating which validators the signatures belong to.
      */
     function updateMMR(
         bytes32 newMmrRoot,
@@ -37,10 +37,10 @@ abstract contract MMRVerification {
      * @dev Updates the current MMR root and updates the validator set. Called instead of
      *      `updateMMR` for blocks which include a validator set change commitment.
      * @param newMmrRoot the new proposed MMR root.
-     * @param signatures[] the subset of validator signatures on this MMR root.
-     * @param bitmap[] bitmap indicating which validators the signatures belong to.
-     * @param valPubKeys[] new validator public keys.
-     * @param pubKeyProof[] merkle proof of the new validator public keys in the MMR.
+     * @param signatures the subset of validator signatures on this MMR root.
+     * @param bitmap bitmap indicating which validators the signatures belong to.
+     * @param valPubKeys new validator public keys.
+     * @param pubKeyProof merkle proof of the new validator public keys in the MMR.
      */
     function updateMMRWithValSet(
         bytes32 newMmrRoot,
@@ -52,8 +52,8 @@ abstract contract MMRVerification {
 
     /**
      * @dev Updates the set of validator public keys stored on contract.
-     * @param valPubKeys[] new validator public keys.
-     * @param pubKeyProof[] merkle proof of the new validator public keys in the MMR.
+     * @param valPubKeys new validator public keys.
+     * @param pubKeyProof merkle proof of the new validator public keys in the MMR.
      */
     function updateValSet(
         bytes32[] memory valPubKeys,
@@ -64,9 +64,9 @@ abstract contract MMRVerification {
      * @dev Validate that a set of messages is contained and executes them.
      * @param blockHeader the header hash of the block containing the messages.
      * @param paraHead parachain Header.
-     * @param paraHeadSiblingsProof[] hashes of siblings needed for the merkle proof of the parachain header.
-     * @param messages[] flat list of all messages.
-     * @param mmrSiblingsProof[] hashes of the mmr's siblings.
+     * @param paraHeadSiblingsProof hashes of siblings needed for the merkle proof of the parachain header.
+     * @param messages flat list of all messages.
+     * @param mmrSiblingsProof hashes of the mmr's siblings.
      */
     function executeMessages(
         bytes32 blockHeader,
