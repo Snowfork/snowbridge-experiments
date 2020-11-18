@@ -1,100 +1,88 @@
-// "SPDX-License-Identifier: UNLICENSED"
+// "SPDX-License-Identifier: Apache-2.0"
 pragma solidity ^0.7.0;
 
+
+/**
+ * @title Verifies various hashed data structures
+ */
 contract Verification {
 
-    uint256 stateVariable = 1;
-
-    // This function just updates a storage variable.
-    // It is used as a control group to establish transaction gas costs.
-    function justUpdate() public {
-        stateVariable = stateVariable + 1;
-    }
-
-    // Data Structure for Set: Array of messages
-    // Commitment: Hash of above array
-    // Process for verifying all messages in the set: Take all messages in the array, hash the entire array and confirm it matches the commitment.
-    // Process for verifying just a single message in the set: Take all messages in the array, hash the entire array and confirm it matches the commitment.
-    function verifyDataA(bytes32[] memory _data, bytes32 _commitment)
-        public
-        returns (bool)
-    {
-        // Without this state update the function is gasless
-        stateVariable = stateVariable + 1;
-
-        bytes32 commitment = "";
-        for(uint i = 0; i < _data.length; i++) {
+    /**
+     * @notice Verify a flat array of data elements
+     *
+     * @param _data the array of data elements to be verified
+     * @param _commitment the commitment hash to check
+     * @return a boolean value representing the success or failure of the operation
+     */
+    function verifyMessageArray(
+        bytes32[] calldata _data,
+        bytes32 _commitment
+    ) public pure returns (bool) {
+        bytes32 commitment = _data[0];
+        for (uint256 i = 1; i < _data.length; i++) {
             commitment = keccak256(abi.encodePacked(commitment, _data[i]));
         }
 
-        return _commitment == _commitment;
+        return commitment == _commitment;
     }
 
-    // Data Structure for Set: Merkle Tree with each leaf as a message
-    // Commitment: Hash of the root of the merkle tree
-    // Process for verifying all messages in the set: Take all messages, store them as leaves, build up the entire merkle tree, repeatedly hashing from all leaves to the root.
-    // Process for verifying just a single message in the set: Take a single message as a leaf, and take in hashes of subtrees separate from that leaf and build up just that leaf's branch of the merkle tree, repeatedly hashing from just that leaf to the root.
+    /**
+     * @notice Verify all elements in a Merkle Tree data structure
+     * @dev Performs an in-place merkle tree root calculation
+     * @dev Note there is currently an assumption here that if the number
+     *      of leaves is odd, the final leaf will be duplicated prior to
+     *      calling this function
+     *
+     * @param _data the array of data elements to be verified
+     * @param _commitment the expected merkle root of the structure
+     * @return a boolean value representing the success or failure of the operation
+     */
+    function verifyMerkleAll(
+        bytes32[] memory _data,
+        bytes32 _commitment
+    ) public pure returns (bool) {
+        uint256 hashLength = _data.length;
 
-    struct Tree {
-        bytes32 root;
-        uint256 numbLeaves;
-    }
-
-    Tree tree;
-    mapping(uint256 => bytes32) public leaves;
-    mapping(bytes32 => bytes32) public leafProof;
-
-    constructor() {
-        tree = Tree("", 0);
-    }
-
-    function verifyDataB(bytes32[] memory _data, bytes32 _commitment)
-        public
-        returns (bool)
-    {
-
-        for(uint i = 0; i < _data.length; i++) {
-            // Insert the leaf's data into the tree
-            tree.numbLeaves = tree.numbLeaves + 1;
-            leaves[tree.numbLeaves] = _data[i];
-
-            // Hash the leaf with the current root to get the new root
-            bytes32 rootHash = keccak256(abi.encodePacked(tree.root, _data[i]));
-            // Set the root and save it as the leaf's local merkle proof
-            leafProof[_data[i]] = rootHash;
-            tree.root = rootHash;
+        for (uint256 j = 0; hashLength > 1; j = 0) {
+            for (uint256 i = 0; i < hashLength; i = i + 2) {
+                _data[j] = keccak256(abi.encodePacked(_data[i], _data[i + 1]));
+                j = j + 1;
+            }
+            // This effectively halves the list length every time,
+            // but a subtraction op-code costs less
+            hashLength = hashLength - j;
         }
 
-        return tree.root == _commitment;
+        return _data[0] == _commitment;
     }
 
-    // /**
-    //  * @dev Returns true if a `leaf` can be proved to be a part of a Merkle tree
-    //  * defined by `root`. For this, a `proof` must be provided, containing
-    //  * sibling hashes on the branch from the leaf to the root of the tree. Each
-    //  * pair of leaves and each pair of pre-images are assumed to be sorted.
-    //  */
-    // function verifyLeafB(bytes32[] memory proof, bytes32 root, bytes32 leaf)
-    //     public
-    //     pure
-    //     returns (bool)
-    // {
-    //     bytes32 computedHash = leaf;
+    /**
+     * @notice Verify a single leaf element in a Merkle Tree
+     * @dev For sake of simplifying the verification algorithm,
+     *      we make an assumption that the proof elements are sorted
+     *
+     * @param root the root of the merkle tree
+     * @param leaf the leaf which needs to be proved
+     * @param proof the array of proofs to help verify the leafs membership
+     * @return a boolean value representing the success or failure of the operation
+     */
+    function verifyMerkleLeaf(
+        bytes32 root,
+        bytes32 leaf,
+        bytes32[] calldata proof
+    ) public pure returns (bool) {
+        bytes32 computedHash = leaf;
 
-    //     for (uint256 i = 0; i < proof.length; i++) {
-    //         bytes32 proofElement = proof[i];
+        for (uint256 i = 0; i < proof.length; i++) {
+            bytes32 proofElement = proof[i];
 
-    //         if (computedHash <= proofElement) {
-    //             // Hash(current computed hash + current element of the proof)
-    //             computedHash = keccak256(abi.encodePacked(computedHash, proofElement));
-    //         } else {
-    //             // Hash(current element of the proof + current computed hash)
-    //             computedHash = keccak256(abi.encodePacked(proofElement, computedHash));
-    //         }
-    //     }
+            if (computedHash < proofElement) {
+                computedHash = keccak256(abi.encodePacked(computedHash, proofElement));
+            } else {
+                computedHash = keccak256(abi.encodePacked(proofElement, computedHash));
+            }
+        }
 
-    //     // Check if the computed hash (root) is equal to the provided root
-    //     return computedHash == root;
-    // }
-
+        return computedHash == root;
+    }
 }
