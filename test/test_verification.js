@@ -1,9 +1,8 @@
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
 const { MerkleTree } = require("merkletreejs")
+const generateSampleData = require("../src/sampleData")
 const { buf2hex, getMerkleRoot, keccak, hex2buf } = require("../src/utils")
-
-const getSampleData = () => ["s", "n", "o", "w", "f", "o", "r", "k"]
 
 describe("Verification contract", function() {
   /**
@@ -25,7 +24,7 @@ describe("Verification contract", function() {
       verification = await Verification.deploy()
       await verification.deployed()
 
-      const hashedData = getSampleData().map(x => keccak(x))
+      const hashedData = [...generateSampleData(100)].map(x => keccak(x))
       hexData = hashedData.map(buf2hex)
     })
 
@@ -65,7 +64,7 @@ describe("Verification contract", function() {
       verification = await Verification.deploy()
       await verification.deployed()
 
-      hashedData = getSampleData().map(x => keccak(x))
+      hashedData = [...generateSampleData(100)].map(x => keccak(x))
       hexData = hashedData.map(buf2hex)
     })
 

@@ -19,10 +19,9 @@ const hex2buf = x => Buffer.from(x.slice(2), "hex")
  * @returns string
  */
 function getMerkleRoot(leaves) {
-  const thing = leaves.entries()
   if (leaves.length > 1) {
     if (leaves.length % 2 !== 0) {
-      leaves.push(leaves[length - 1])
+      leaves.push(leaves[leaves.length - 1])
     }
     let j = 0
     let i = 0
