@@ -5,44 +5,55 @@ require("@nomiclabs/hardhat-solhint")
 task("gasUsage", "Prints out the gas usage for each of the verification functions", async () => {
   const { MerkleTree } = require("merkletreejs")
   const { keccak, buf2hex, hex2buf, getMerkleRoot } = require("./src/utils")
+  const generateSampleData = require("./src/sampleData")
+
+  const dataLengths = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
+  const dataObjs = dataLengths.map(d => {
+    return { length: d, data: [...generateSampleData(d)].map(b => keccak(b)).map(buf2hex) }
+  })
 
   const Verification = await ethers.getContractFactory("Verification")
   const verificationContract = await Verification.deploy()
 
-  const hexData = ["s", "n", "o", "w", "f", "o", "r", "k"].map(x => keccak(x)).map(buf2hex)
-
-  const commitment = hexData.reduce((prev, curr) =>
-    ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [prev, curr])
-  )
-
   console.log("verifyMessageArray function:")
-  console.log(
-    "  ↪ Estimated gas usage: ",
-    (await verificationContract.estimateGas.verifyMessageArray(hexData, commitment)).toString()
-  )
-
-  const tree = new MerkleTree(hexData, keccak, { sort: true })
-  const hexRoot = tree.getHexRoot()
-  const hexLeaf = hexData[0]
-  const hexProof = tree.getHexProof(hex2buf(hexLeaf))
+  for (let i = 0; i < dataObjs.length; i++) {
+    const element = dataObjs[i]
+    const commitment = element.data.reduce((prev, curr) =>
+      ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [prev, curr])
+    )
+    console.log(
+      `  ↪ Data length ${element.length}: `,
+      (await verificationContract.estimateGas.verifyMessageArray(element.data, commitment)).toString()
+    )
+  }
 
   console.log("verifyMerkleLeaf function:")
-  console.log(
-    "  ↪ Estimated gas usage: ",
-    (await verificationContract.estimateGas.verifyMerkleLeaf(hexRoot, hexLeaf, hexProof)).toString()
-  )
-
-  const sortedLeaves = hexData
-    .map(hex2buf)
-    .sort(Buffer.compare)
-    .map(buf2hex)
-  const merkleRoot = getMerkleRoot(sortedLeaves)
+  for (let i = 0; i < dataObjs.length; i++) {
+    const element = dataObjs[i]
+    const tree = new MerkleTree(element.data, keccak, { sort: true })
+    const hexRoot = tree.getHexRoot()
+    const hexLeaf = element.data[0]
+    const hexProof = tree.getHexProof(hex2buf(hexLeaf))
+    console.log(
+      `  ↪ Data length ${element.length}: `,
+      (await verificationContract.estimateGas.verifyMerkleLeaf(hexRoot, hexLeaf, hexProof)).toString()
+    )
+  }
 
   console.log("verifyMerkleAll function:")
-  console.log(
-    "  ↪ Estimated gas usage: ",
-    (await verificationContract.estimateGas.verifyMerkleAll(sortedLeaves, merkleRoot)).toString()
-  )
+  for (let i = 0; i < dataObjs.length; i++) {
+    const element = dataObjs[i]
+    const sortedLeaves = element.data
+      .map(hex2buf)
+      .sort(Buffer.compare)
+      .map(buf2hex)
+    const merkleRoot = getMerkleRoot(sortedLeaves)
+
+    console.log(
+      `  ↪ Data length ${element.length}: `,
+      (await verificationContract.estimateGas.verifyMerkleAll(sortedLeaves, merkleRoot)).toString()
+    )
+  }
 })
 
 /**
