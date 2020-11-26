@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /**
  * @title A entry contract for the Ethereum light client
- * @dev Inherits Ownable to provide mechanism to restrict access to certain
- *      functions.
- *      In future a more sophisticated mechanism for role-based access
- *      control can be implemented.
  */
-abstract contract LightClientBridge is Ownable {
+abstract contract LightClientBridge {
 
     using SafeMath for uint256;
 
@@ -66,7 +61,7 @@ abstract contract LightClientBridge is Ownable {
      * the logic
      * @param validator A validator to register
      */
-    function registerValidator(address validator) public onlyOwner {
+    function registerValidator(address validator) public {
         validatorRegistry.registerValidator();
     }
 
