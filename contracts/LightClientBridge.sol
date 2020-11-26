@@ -13,6 +13,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
  */
 abstract contract LightClientBridge is Ownable {
 
+    using SafeMath for uint256;
+
     /* Events */
 
     /**
@@ -104,7 +106,7 @@ abstract contract LightClientBridge is Ownable {
             "Error: Invalid Signature"
         );
 
-        count = SafeMath.add(count, 1);
+        count = count.add(1);
         bytes32 dataHash = keccak256(abi.encodePacked(statement, validatorBitfield, blockNumber, count));
         
         validationData[dataHash] = ValidationData(statement, validatorBitfield, blockNumber, count);
