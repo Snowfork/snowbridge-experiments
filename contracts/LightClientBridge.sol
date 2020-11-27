@@ -56,26 +56,6 @@ abstract contract LightClientBridge {
     /* Public Functions */
 
     /**
-     * @notice Called in order to register a validator
-     * @dev Calls out to a separate validatorRegistry contract to perform
-     * the logic
-     * @param validator A validator to register
-     */
-    function registerValidator(address validator) public {
-        validatorRegistry.registerValidator();
-    }
-
-    /**
-     * @notice Called in order to unregister a validator
-     * @dev Calls out to a separate validatorRegistry contract to perform
-     * the logic
-     * @param validator An array of validators to unregister
-     */
-    function unregisterValidator(address validator) public  {
-        validatorRegistry.unregisterValidator();
-    }
-
-    /**
      * @notice Executed by the prover in order to begin the process of block
      * acceptance by the light client
      * @dev 
@@ -165,7 +145,18 @@ abstract contract LightClientBridge {
     }
 
     function acceptBlock() private {
-        // Rapturous applause
+        checkForValidatorSetChanges(statement);
+        // TODO Implement the remaining functionality in this function
+    }
+
+    /**
+     * @notice Check if the statement includes instruction to change the validator set,
+     * and if it does then make the required changes
+     * @dev This function should call out to the validator registry contract
+     * @param statement The value to check if changes are required
+     */
+    function checkForValidatorSetChanges(bytes32 statement) private {
+        // TODO Implement this function
     }
 }
 
@@ -185,11 +176,19 @@ abstract contract ValidatorRegistry is Ownable {
 
     constructor () public {}
 
+    /**
+     * @notice Called in order to register a validator
+     * @param validator A validator to register
+     */
     function registerValidator(address validator) 
         public
         onlyOwner 
         returns (bool success);
-
+    
+    /**
+     * @notice Called in order to unregister a validator
+     * @param validator An array of validators to unregister
+     */
     function unregisterValidator(address validator)
         public
         onlyOwner
