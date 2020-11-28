@@ -103,21 +103,23 @@ abstract contract LightClientBridge {
         validationData[dataHash] = ValidationData(statement, validatorClaimsBitfield, block.number, count);
 
         //4 - _(only to be done later, lock up sender stake as collateral)_
-        acceptBlock();
-
         emit InitialVerificationSuccessful(msg.sender, block.number, count);
     }
 
     /**
      * @notice Performs the second step in the validation logic
-     * @param statement contains the statement signed by the validator(s)
      * @param id an identifying value generated in the previous transaction
-     * @param signatures an array of signatures from the randomly chosen validators
+     * @param statement contains the statement signed by the validator(s)
+     * @param randomSignatureCommitments an array of signatures from the randomly chosen validators
+     * @param randomSignatureBitfieldPositions
+     * @param randomPublicKeyMerkleProofs
      */
-    function finaliseValidation(
-        bytes32 statement,
+    function completeSignatureCommitment(
         uint256 id,
-        bytes32[] signatures
+        bytes32 statement,
+        bytes[] randomSignatureCommitments,
+        uint256[] randomSignatureBitfieldPositions,
+        bytes32[] randomPublicKeyMerkleProofs
     ) public {
         require(
             validateFinaliseSender(),
