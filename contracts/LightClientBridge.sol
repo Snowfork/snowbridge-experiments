@@ -37,7 +37,7 @@ abstract contract LightClientBridge {
 
     struct ValidationData {
         bytes32 statement;
-        uint256 validatorBitfield;
+        uint256 validatorClaimsBitfield;
         uint256 blockNumber;
         uint256 id;
     }
@@ -48,8 +48,8 @@ abstract contract LightClientBridge {
     uint256 private count;
     mapping(bytes32 => ValidationData) public validationData;
 
-    constructor () public {
-        validatorRegister = new ValidatorRegistry();
+    constructor() public {
+        validatorRegistry = new ValidatorRegistry();
         count = 0;
     }
 
@@ -58,33 +58,46 @@ abstract contract LightClientBridge {
     /**
      * @notice Executed by the prover in order to begin the process of block
      * acceptance by the light client
-     * @dev 
      * @param statement contains the statement signed by the validator(s)
-     * @param validatorBitfield a bitfield containing the membership status of each
+     * @param validatorClaimsBitfield a bitfield containing the membership status of each
      * validator who has claimed to have signed the statement
-     * @param sig the signature of an arbitrary validator
-     * @param proofs Proofs required for validation of the Merkle tree
+     * @param senderSignatureCommitment the signature of an arbitrary validator
+     * @param senderPublicKeyMerkleProof Proof required for validation of the Merkle tree
      */
-    function initialiseValidation(
+    function newSignatureCommitment(
         bytes32 statement,
-        uint256 validatorBitfield,
-        bytes32 sig,
-        bytes32[] calldata proofs
+        uint256 validatorClaimsBitfield,
+        bytes32 senderSignatureCommitment,
+        bytes32[] calldata senderPublicKeyMerkleProof
     ) public {
+        //1 - check if senderPublicKeyMerkleProof is valid based on the
+        //    ValidatorRegistry merkle root, ie, confirm that the senderPublicKey
+        //    is from an active validator, with senderPublicKey being returned
         require(
             validatorRegistry.checkValidatorInSet(),
             "Error: Sender must be in validator set"
         );
 
+        //2 - check if senderSignatureCommitment is correct, ie, check if it matches
+        //    the signature of senderPublicKey on the statement
         require(
-            validateSignature(statement, validatorBitfield, sig, proofs),
+            validateSignature(
+                statement,
+                validatorClaimsBitfield,
+                senderSignatureCommitment,
+                senderPublicKeyMerkleProof
+            ),
             "Error: Invalid Signature"
         );
 
+        //3 - we're good now, so record statement, validatorClaimsBitfield,
+        //    senderPublicKey, blocknumber, etc
         count = count.add(1);
-        bytes32 dataHash = keccak256(abi.encodePacked(statement, validatorBitfield, blockNumber, count));
-        
-        validationData[dataHash] = ValidationData(statement, validatorBitfield, blockNumber, count);
+        bytes32 dataHash = keccak256(abi.encodePacked(statement, validatorClaimsBitfield, block.number, count));
+
+        validationData[dataHash] = ValidationData(statement, validatorClaimsBitfield, block.number, count);
+
+        //4 - _(only to be done later, lock up sender stake as collateral)_
 
         emit InitialVerificationSuccessful(msg.sender, block.number, count);
     }
@@ -94,7 +107,6 @@ abstract contract LightClientBridge {
      * @param statement contains the statement signed by the validator(s)
      * @param id an identifying value generated in the previous transaction
      * @param signatures an array of signatures from the randomly chosen validators
-     * @return 
      */
     function finaliseValidation(
         bytes32 statement,
@@ -107,7 +119,7 @@ abstract contract LightClientBridge {
         );
 
         require(
-            // TODO: create another function for this separate from the
+            // TODO create another function for this separate from the
             // validation function used in the initialisation stage
             validateSignature(statement, id, signatures),
             "Error: Invalid Signature"
@@ -121,7 +133,7 @@ abstract contract LightClientBridge {
 
     function validateSignature(
         bytes32 statement,
-        uint256 validatorBitfield,
+        uint256 validatorClaimsBitfield,
         bytes32 sig,
         bytes32[] calldata proofs
     )
@@ -129,6 +141,10 @@ abstract contract LightClientBridge {
         view
         returns (bool)
     {
+        //TODO Implement this function
+        //1 - check if senderPublicKeyMerkleProof is valid based on the
+        //    ValidatorRegistry merkle root, ie, confirm that the senderPublicKey
+        //    is from an active validator, with senderPublicKey being returned
         return true;
     }
 
@@ -162,7 +178,7 @@ abstract contract LightClientBridge {
 
 /**
  * @title A contract storing state on the current validator set
- * @dev Stores the validator set as a Merkle root (according to 
+ * @dev Stores the validator set as a Merkle root (according to
  * https://hackmd.io/@vKfUEAWlRR2Ogaq8nYYknw/SJmkC_9XP)
  * @dev Inherits `Ownable` to ensure it can only be callable by the
  * instantiating contract account (which is the LightClientBridge contract)
@@ -171,20 +187,24 @@ abstract contract ValidatorRegistry is Ownable {
 
     event validatorRegistered(address validator);
     event validatorUnregistered(address validator);
-    
-    bytes32 validatorSetMerkleRoot;
 
-    constructor () public {}
+    /**
+     * @notice The merkle root of a merkle tree that contains one leaf for each
+     * validator, with that validators public key
+     */
+    bytes32 public validatorSetMerkleRoot;
+
+    constructor() public {}
 
     /**
      * @notice Called in order to register a validator
      * @param validator A validator to register
      */
-    function registerValidator(address validator) 
+    function registerValidator(address validator)
         public
-        onlyOwner 
+        onlyOwner
         returns (bool success);
-    
+
     /**
      * @notice Called in order to unregister a validator
      * @param validator An array of validators to unregister
