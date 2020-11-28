@@ -69,7 +69,7 @@ abstract contract LightClientBridge {
         uint256 validatorClaimsBitfield,
         bytes senderSignatureCommitment,
         bytes32[] calldata senderPublicKeyMerkleProof
-    ) 
+    )
         public
         payable
     {
@@ -79,7 +79,6 @@ abstract contract LightClientBridge {
         require(
             validatorRegistry.checkValidatorInSet(
                 validatorClaimsBitfield,
-                senderSignatureCommitment,
                 senderPublicKeyMerkleProof,
                 msg.sender
             ),
@@ -91,9 +90,8 @@ abstract contract LightClientBridge {
         require(
             validateSignature(
                 statement,
-                validatorClaimsBitfield,
                 senderSignatureCommitment,
-                senderPublicKeyMerkleProof
+                msg.sender
             ),
             "Error: Invalid Signature"
         );
@@ -102,10 +100,10 @@ abstract contract LightClientBridge {
         //    senderPublicKey, blocknumber, etc
         count = count.add(1);
         bytes32 dataHash = keccak256(abi.encodePacked(statement, validatorClaimsBitfield, block.number, count));
-
         validationData[dataHash] = ValidationData(statement, validatorClaimsBitfield, block.number, count);
 
         //4 - _(only to be done later, lock up sender stake as collateral)_
+        acceptBlock();
 
         emit InitialVerificationSuccessful(msg.sender, block.number, count);
     }
@@ -140,19 +138,19 @@ abstract contract LightClientBridge {
     /* Private Functions */
 
     function validateSignature(
-        bytes32 statement,
-        uint256 validatorClaimsBitfield,
-        bytes sig,
-        bytes32[] calldata proofs
+        bytes32 hash,
+        bytes signature,
+        address checkAddress
     )
         private
         view
         returns (bool)
     {
         //TODO Implement this function
-        //1 - check if senderPublicKeyMerkleProof is valid based on the
-        //    ValidatorRegistry merkle root, ie, confirm that the senderPublicKey
-        //    is from an active validator, with senderPublicKey being returned
+        //1. Parse signature values `(uint8 r, bytes32 s, bytes32 v)` from `bytes signature`
+        //2. Perform ecrecover(hash, r, s, v)
+        //3. Return boolean showing if the `recovered address == checkAddress`
+
         return true;
     }
 
@@ -228,14 +226,12 @@ abstract contract ValidatorRegistry is Ownable {
      * of the merkle tree
      * @param validatorClaimsBitfield a bitfield containing the membership status of each
      * validator who has claimed to have signed the statement
-     * @param senderSignatureCommitment the signature to check
      * @param senderPublicKeyMerkleProof Proof required for validation of the Merkle tree
      * @param validator The address of the validator to check
      * @return If it is in the set
      */
     function checkValidatorInSet(
         uint256 validatorClaimsBitfield,
-        bytes senderSignatureCommitment,
         bytes32[] senderPublicKeyMerkleProof,
         address validator
     )
@@ -246,5 +242,7 @@ abstract contract ValidatorRegistry is Ownable {
         //TODO Logic
         // 1. Perform a check to see if the validator is one of the validators, using the bitfield
         // 2. Check that the merkle proofs verify correctly
+
+        return true;
     }
 }
