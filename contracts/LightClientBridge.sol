@@ -69,7 +69,10 @@ abstract contract LightClientBridge {
         uint256 validatorClaimsBitfield,
         bytes32 senderSignatureCommitment,
         bytes32[] calldata senderPublicKeyMerkleProof
-    ) public {
+    ) 
+        public
+        payable
+    {
         //1 - check if senderPublicKeyMerkleProof is valid based on the
         //    ValidatorRegistry merkle root, ie, confirm that the senderPublicKey
         //    is from an active validator, with senderPublicKey being returned
