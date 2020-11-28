@@ -77,7 +77,12 @@ abstract contract LightClientBridge {
         //    ValidatorRegistry merkle root, ie, confirm that the senderPublicKey
         //    is from an active validator, with senderPublicKey being returned
         require(
-            validatorRegistry.checkValidatorInSet(),
+            validatorRegistry.checkValidatorInSet(
+                validatorClaimsBitfield,
+                senderSignatureCommitment,
+                senderPublicKeyMerkleProof,
+                msg.sender
+            ),
             "Error: Sender must be in validator set"
         );
 
@@ -217,8 +222,16 @@ abstract contract ValidatorRegistry is Ownable {
         onlyOwner
         returns (bool success);
 
-    function checkValidatorInSet(address validator)
+    function checkValidatorInSet(
+        uint256 validatorClaimsBitfield,
+        bytes32 senderSignatureCommitment,
+        bytes32[] senderPublicKeyMerkleProof,
+        address validator
+    )
         public
         view
-        returns (bool inSet);
+        returns (bool inSet)
+    {
+        //TODO Logic
+    }
 }
