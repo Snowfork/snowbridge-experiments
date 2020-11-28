@@ -121,6 +121,29 @@ abstract contract LightClientBridge {
         uint256[] randomSignatureBitfieldPositions,
         bytes32[] randomPublicKeyMerkleProofs
     ) public {
+        //1 - calculate the random number, with the same offchain logic, ie:
+        //  - get statement.blocknumber, add 45, get randomSeedBlockHash,
+        //    create randomSeed with same randomSeed logic as used offchain,
+        //    generate 5 random numbers between 1 and 167
+        //2 - require random numbers generated onchain match random numbers 
+        //    provided to transaction
+        //3 - for each randomSignature, do:
+        //    - take corresponding randomSignatureBitfieldPosition, check with the
+        //      onchain bitfield that it corresponds to a positive bitfield entry
+        //      for a validator that did actually sign
+        //    - take corresponding randomSignatureCommitments, check with the onchain
+        //      bitfield that it corresponds to a positive bitfield entry for a
+        //      validator that did actually sign
+        //    - take corresponding randomPublicKeyMerkleProof, check if it is
+        //      valid based on the ValidatorRegistry merkle root, ie, confirm that
+        //      the randomPublicKey is from an active validator, with randomPublicKey
+        //      being returned
+        //    - take corresponding randomSignatureCommitments, check if it is correct,
+        //      ie, check if it matches the signature of randomPublicKey on the
+        //      statement
+        //4 - We're good, we accept the statement
+        //5 - we process the statement (maybe do this in/from another contract
+        //    can see later)
         require(
             validateFinaliseSender(),
             "Error: Sender was not designated relayer"
