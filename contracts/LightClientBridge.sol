@@ -67,7 +67,7 @@ abstract contract LightClientBridge {
     function newSignatureCommitment(
         bytes32 statement,
         uint256 validatorClaimsBitfield,
-        bytes32 senderSignatureCommitment,
+        bytes senderSignatureCommitment,
         bytes32[] calldata senderPublicKeyMerkleProof
     ) 
         public
@@ -142,7 +142,7 @@ abstract contract LightClientBridge {
     function validateSignature(
         bytes32 statement,
         uint256 validatorClaimsBitfield,
-        bytes32 sig,
+        bytes sig,
         bytes32[] calldata proofs
     )
         private
@@ -186,8 +186,7 @@ abstract contract LightClientBridge {
 
 /**
  * @title A contract storing state on the current validator set
- * @dev Stores the validator set as a Merkle root (according to
- * https://hackmd.io/@vKfUEAWlRR2Ogaq8nYYknw/SJmkC_9XP)
+ * @dev Stores the validator set as a Merkle root
  * @dev Inherits `Ownable` to ensure it can only be callable by the
  * instantiating contract account (which is the LightClientBridge contract)
  */
@@ -211,7 +210,8 @@ abstract contract ValidatorRegistry is Ownable {
     function registerValidator(address validator)
         public
         onlyOwner
-        returns (bool success);
+        returns (bool success)
+    {}
 
     /**
      * @notice Called in order to unregister a validator
@@ -220,18 +220,31 @@ abstract contract ValidatorRegistry is Ownable {
     function unregisterValidator(address validator)
         public
         onlyOwner
-        returns (bool success);
+        returns (bool success)
+    {}
 
+    /**
+     * @notice Checks if a validator is in the set, and if it's address is a member
+     * of the merkle tree
+     * @param validatorClaimsBitfield a bitfield containing the membership status of each
+     * validator who has claimed to have signed the statement
+     * @param senderSignatureCommitment the signature to check
+     * @param senderPublicKeyMerkleProof Proof required for validation of the Merkle tree
+     * @param validator The address of the validator to check
+     * @return If it is in the set
+     */
     function checkValidatorInSet(
         uint256 validatorClaimsBitfield,
-        bytes32 senderSignatureCommitment,
+        bytes senderSignatureCommitment,
         bytes32[] senderPublicKeyMerkleProof,
         address validator
     )
         public
         view
-        returns (bool inSet)
+        returns (bool)
     {
         //TODO Logic
+        // 1. Perform a check to see if the validator is one of the validators, using the bitfield
+        // 2. Check that the merkle proofs verify correctly
     }
 }
