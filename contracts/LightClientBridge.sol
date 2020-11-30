@@ -145,10 +145,6 @@ abstract contract LightClientBridge {
         //4 - We're good, we accept the statement
         //5 - We process the statement (maybe do this in/from another contract
         //    can see later)
-        require(
-            validateFinaliseSender(),
-            "Error: Sender was not designated relayer"
-        );
 
         require(
             // TODO create another function for this separate from the
