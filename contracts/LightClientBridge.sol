@@ -176,18 +176,6 @@ abstract contract LightClientBridge {
         return true;
     }
 
-    /**
-     * @notice Checks that the caller of the finalisation function is the
-     * correct sender
-     * @dev The exact way in which the validator will be chosen is TBC
-     * according to the docs
-     * @return A boolean value depending on whether the sender was valid
-     * or not
-     */
-    function validateFinaliseSender() private view returns (bool) {
-        return true;
-    }
-
     function processStatement() private {
         checkForValidatorSetChanges(statement);
         // TODO Implement the remaining functionality in this function
