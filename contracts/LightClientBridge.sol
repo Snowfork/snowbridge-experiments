@@ -145,6 +145,7 @@ abstract contract LightClientBridge {
         //4 - We're good, we accept the statement
         //5 - We process the statement (maybe do this in/from another contract
         //    can see later)
+        processStatement(statement);
 
         require(
             // TODO create another function for this separate from the
@@ -153,7 +154,6 @@ abstract contract LightClientBridge {
             "Error: Invalid Signature"
         );
 
-        processStatement();
         emit FinalVerificationSuccessful(statement, msg.sender, id);
     }
 
@@ -176,7 +176,7 @@ abstract contract LightClientBridge {
         return true;
     }
 
-    function processStatement() private {
+    function processStatement(bytes32 statement) private {
         checkForValidatorSetChanges(statement);
         // TODO Implement the remaining functionality in this function
     }
