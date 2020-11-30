@@ -147,13 +147,6 @@ abstract contract LightClientBridge {
         //    can see later)
         processStatement(statement);
 
-        require(
-            // TODO create another function for this separate from the
-            // validation function used in the initialisation stage
-            validateSignature(statement, id, signatures),
-            "Error: Invalid Signature"
-        );
-
         emit FinalVerificationSuccessful(statement, msg.sender, id);
     }
 
