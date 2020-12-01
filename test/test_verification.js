@@ -1,86 +1,151 @@
-const Verification = artifacts.require("Verification");
+const { expect } = require("chai")
+const { ethers } = require("hardhat")
+const { MerkleTree } = require("merkletreejs")
+const generateSampleData = require("../src/sampleData")
+const { buf2hex, getMerkleRoot, keccak, hex2buf } = require("../src/utils")
 
-const BigNumber = web3.BigNumber;
+describe("Verification contract", function() {
+  /**
+   * @type import("ethers").Contract
+   */
+  let verification
+  /**
+   * @type Buffer[]
+   */
+  let hashedData
+  /**
+   * @type string[]
+   */
+  let hexData
 
-require("chai")
-  .use(require("chai-as-promised"))
-  .use(require("chai-bignumber")(BigNumber))
-  .should();
+  context("List Data Structure", function() {
+    beforeEach(async function() {
+      const Verification = await ethers.getContractFactory("Verification")
+      verification = await Verification.deploy()
+      await verification.deployed()
 
-  contract("Verification", function (accounts) {
+      const hashedData = [...generateSampleData(100)].map(x => keccak(x))
+      hexData = hashedData.map(buf2hex)
+    })
 
-    describe("list", function () {
-        beforeEach(async function () {
-            this.verification = await Verification.new();
+    it("Should verify an array of hashed data, given the commitment is correct", async function() {
+      const commitment = hexData.reduce((prev, curr) =>
+        ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [prev, curr])
+      )
 
-            this.data1 = web3.utils.asciiToHex("random1").padEnd(66, '0');
-            this.data2 = web3.utils.asciiToHex("random2").padEnd(66, '0');
-            this.data3 = web3.utils.asciiToHex("random3").padEnd(66, '0');
-            this.data4 = web3.utils.asciiToHex("random4").padEnd(66, '0');
-            this.data5 = web3.utils.asciiToHex("random5").padEnd(66, '0');
-            this.data = [this.data1, this.data2, this.data3, this.data4, this.data5];
-        });
+      const result = await verification.verifyMessageArray(hexData, commitment)
 
-        it("should verify commitments against data set", async function () {
-            let commitment = "";
-            for(var i = 0; i < this.data.length; i++) {
-                commitment = web3.utils.soliditySha3(commitment, this.data[i]);
-            }
+      expect(result).to.be.true
+    })
 
-            const verified = await this.verification.verifyDataA.call(this.data, commitment);
-            verified.should.be.equal(true);
-        });
+    it("Should not verify an array of hashed data, when the commitment is not correct", async function() {
+      const commitment = hexData.reduce((prev, curr) =>
+        ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [prev, curr])
+      )
 
+      const badData = ["s", "n", "O", "w", "f", "U", "n", "k"].map(x => keccak(x)).map(buf2hex)
 
-        it("should get expected verification gas expenditures", async function () {
-            // justUpdate is a function call which just updates a storage variable.
-            // It is used as a control group to establish transaction gas costs
-            // unrelated to verification.
-            const result1 = await this.verification.justUpdate();
-            const gasCost1 = Number(result1.receipt.gasUsed);
+      const result = await verification.verifyMessageArray(badData, commitment)
 
-            let commitment = ""; web3.utils.soliditySha3(this.data1, this.data2);
-            for(var i = 0; i < this.data.length; i++) {
-                commitment = web3.utils.soliditySha3(commitment, this.data[i]);
-            }
+      expect(result).to.be.false
+    })
+    it("Should not revert when called", async function() {
+      const commitment = hexData.reduce((prev, curr) =>
+        ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [prev, curr])
+      )
 
-            const result2 = await this.verification.verifyDataA(this.data, commitment);
-            const gasCost2 = Number(result2.receipt.gasUsed);
-            console.log("Verification cost:", gasCost2 - gasCost1);
-        });
-    });
+      await expect(verification.verifyMessageArray(hexData, commitment)).to.not.be.reverted
+    })
+  })
 
-    describe("merkle tree", function () {
-        beforeEach(async function () {
-            this.verification = await Verification.new();
+  context("Merkle Tree Data Structure", function() {
+    beforeEach(async function() {
+      const Verification = await ethers.getContractFactory("Verification")
+      verification = await Verification.deploy()
+      await verification.deployed()
 
-            this.data1 = web3.utils.asciiToHex("random1").padEnd(66, '0');
-            this.data2 = web3.utils.asciiToHex("random2").padEnd(66, '0');
-            this.data3 = web3.utils.asciiToHex("random3").padEnd(66, '0');
-            this.data4 = web3.utils.asciiToHex("random4").padEnd(66, '0');
-            this.data5 = web3.utils.asciiToHex("random5").padEnd(66, '0');
-            this.data = [this.data1, this.data2, this.data3, this.data4, this.data5];
-        });
+      hashedData = [...generateSampleData(100)].map(x => keccak(x))
+      hexData = hashedData.map(buf2hex)
+    })
 
-        it("should verify commitments against data set", async function () {
-            let commitment = "";
-            for(var i = 0; i < this.data.length; i++) {
-                commitment = web3.utils.soliditySha3(commitment, this.data[i]);
-            }
+    describe("When verifying a single leaf in the tree", function() {
+      it("Should verify an array of hashed data, given the commitment is correct", async function() {
+        const tree = new MerkleTree(hashedData, keccak, { sort: true })
 
-            const verified = await this.verification.verifyDataB.call(this.data, commitment);
-            verified.should.be.equal(true);
-        });
+        const root = tree.getRoot()
+        const hexRoot = tree.getHexRoot()
 
-        it("should get expected verification gas expenditures", async function () {
-            let commitment = "";
-            for(var i = 0; i < this.data.length; i++) {
-                commitment = web3.utils.soliditySha3(commitment, this.data[i]);
-            }
+        const leaf = hashedData[0]
+        const hexLeaf = MerkleTree.bufferToHex(leaf)
 
-            const result = await this.verification.verifyDataB(this.data, commitment);
-            const gasCost = Number(result.receipt.gasUsed);
-            console.log("Verification cost:", gasCost);
-        });
-    });
-});
+        const proof = tree.getProof(leaf)
+        const hexProof = tree.getHexProof(leaf)
+
+        const result = await verification.verifyMerkleLeaf(hexRoot, hexLeaf, hexProof)
+
+        expect(tree.verify(proof, leaf, root)).to.be.true
+        expect(result).to.be.true
+      })
+
+      it("Should not verify an array of hashed data, when the commitment is not correct", async function() {
+        const tree = new MerkleTree(hashedData, keccak, { sort: true })
+
+        const root = tree.getRoot()
+        const hexRoot = tree.getHexRoot()
+
+        const correctLeaf = hashedData[0]
+        const incorrectLeaf = keccak("0")
+        const incorrectLeafHex = MerkleTree.bufferToHex(incorrectLeaf)
+
+        const proof = tree.getProof(correctLeaf)
+        const hexProof = tree.getHexProof(correctLeaf)
+
+        const result = await verification.verifyMerkleLeaf(hexRoot, incorrectLeafHex, hexProof)
+
+        expect(tree.verify(proof, incorrectLeaf, root)).to.be.false
+        expect(result).to.be.false
+      })
+      it("Should not revert when called", async function() {
+        const tree = new MerkleTree(hexData, keccak, { sort: true })
+        const hexRoot = tree.getHexRoot()
+        const hexLeaf = hexData[0]
+        const hexProof = tree.getHexProof(hex2buf(hexLeaf))
+
+        await expect(verification.verifyMerkleLeaf(hexRoot, hexLeaf, hexProof)).to.not.be.reverted
+      })
+    })
+
+    describe("When verifying all leaves in the tree", function() {
+      /**
+       * @type string[]
+       */
+      let sortedLeaves
+      /**
+       * @type string
+       */
+      let hexRoot
+
+      beforeEach(function() {
+        sortedLeaves = hashedData.sort(Buffer.compare).map(buf2hex)
+
+        hexRoot = getMerkleRoot(sortedLeaves.map(x => x))
+      })
+
+      it("Should verify an array of hashed data, given the commitment is correct", async function() {
+        const result = await verification.verifyMerkleAll(sortedLeaves, hexRoot)
+
+        expect(result).to.be.true
+      })
+
+      it("Should not verify an array of hashed data, when the commitment is not correct", async function() {
+        sortedLeaves[2] = sortedLeaves[3]
+
+        const result = await verification.verifyMerkleAll(sortedLeaves, hexRoot)
+        expect(result).to.be.false
+      })
+      it("Should not revert when called", async function() {
+        await expect(verification.verifyMerkleAll(sortedLeaves, hexRoot)).to.not.be.reverted
+      })
+    })
+  })
+})
