@@ -7,9 +7,11 @@ contract MMRStatelessVerification {
     function verifyParachainHeaderInLeaf(
         bytes32 paraHead,
         bytes32 paraHeadSibling,
+        bool siblingFirst,
         bytes32 leafParaHeadRoot
     ) public pure returns (bool) {
-        return leafParaHeadRoot == keccak256(abi.encodePacked(paraHead, paraHeadSibling));
+        if(siblingFirst) { return leafParaHeadRoot == keccak256(abi.encodePacked(paraHeadSibling, paraHead)); }
+        else { return leafParaHeadRoot == keccak256(abi.encodePacked(paraHead, paraHeadSibling)); }
     }
 
     // Verifies if an MMR leaf is contained in an MMR

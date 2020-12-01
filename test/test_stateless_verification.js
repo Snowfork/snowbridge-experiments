@@ -14,12 +14,21 @@ require("chai")
             this.statelessVerification = await MMRStatelessVerification.new();
         });
 
-        it("should verify parachain headers in MMR leaves", async function () {
+        it("should verify parachain headers in MMR leaves (head first)", async function () {
             const paraHeadHash = web3.utils.soliditySha3("parahead1");
             const siblingParaHeadHash = web3.utils.soliditySha3("parahead2");
             const leafParaHeadRootHash = web3.utils.soliditySha3(paraHeadHash, siblingParaHeadHash);
 
-            const verified = await this.statelessVerification.verifyParachainHeaderInLeaf.call(paraHeadHash, siblingParaHeadHash, leafParaHeadRootHash);
+            const verified = await this.statelessVerification.verifyParachainHeaderInLeaf.call(paraHeadHash, siblingParaHeadHash, false, leafParaHeadRootHash);
+            verified.should.be.equal(true);
+        });
+
+        it("should verify parachain headers in MMR leaves (sibling first)", async function () {
+            const paraHeadHash = web3.utils.soliditySha3("parahead1");
+            const siblingParaHeadHash = web3.utils.soliditySha3("parahead2");
+            const leafParaHeadRootHash = web3.utils.soliditySha3(siblingParaHeadHash, paraHeadHash);
+
+            const verified = await this.statelessVerification.verifyParachainHeaderInLeaf.call(paraHeadHash, siblingParaHeadHash, true, leafParaHeadRootHash);
             verified.should.be.equal(true);
         });
 
