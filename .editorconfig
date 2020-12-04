@@ -1,0 +1,24 @@
+root = true
+
+[*]
+# use line feed
+end_of_line = lf
+
+# soft tabs
+indent_style = space
+
+# number of columns used for each indentation level
+indent_size = 2
+
+# remove any whitespace characters preceding newline characters
+trim_trailing_whitespace = false
+
+# character set
+charset = utf-8
+
+[*.md]
+# This makes editing markdown files difficult
+trim_trailing_whitespace = false
+
+[*.sol]
+indent_size = 4

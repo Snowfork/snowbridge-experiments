@@ -1,0 +1,27 @@
+{
+  "endOfLine": "lf",
+  "printWidth": 120,
+  "useTabs": false,
+  "spaces": 2,
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "tabWidth": 4,
+        "singleQuote": false,
+        "bracketSpacing": true,
+        "explicitTypes": "always"
+      }
+    },
+    {
+      "files": "*.js",
+      "options": {
+        "arrowParens": "avoid",
+        "bracketSpacing": true,
+        "trailingComma": "es5",
+        "singleQuote": false,
+        "semi": false
+      }
+    }
+  ]
+}
