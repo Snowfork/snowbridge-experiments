@@ -60,7 +60,7 @@ task("gasUsage", "Prints out the gas usage for each of the verification function
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.7.4",
+  solidity: "0.7.5",
   settings: {
     optimizer: {
       enabled: true,

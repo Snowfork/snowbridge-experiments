@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -8,7 +9,7 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 /**
  * @title A entry contract for the Ethereum light client
  */
-abstract contract LightClientBridge {
+contract LightClientBridge {
 
     using SafeMath for uint256;
 
@@ -46,11 +47,11 @@ abstract contract LightClientBridge {
 
     /* State */
 
-    address private validatorRegistry;
+    ValidatorRegistry private validatorRegistry;
     uint256 private count;
     mapping(bytes32 => ValidationData) public validationData;
 
-    constructor() public {
+    constructor() {
         validatorRegistry = new ValidatorRegistry();
         count = 0;
     }
@@ -113,8 +114,8 @@ abstract contract LightClientBridge {
      * @param id an identifying value generated in the previous transaction
      * @param statement contains the statement signed by the validator(s)
      * @param randomSignatureCommitments an array of signatures from the randomly chosen validators
-     * @param randomSignatureBitfieldPositions
-     * @param randomPublicKeyMerkleProofs
+     * @param randomSignatureBitfieldPositions an array of bitfields from the chosen validators
+     * @param randomPublicKeyMerkleProofs an array of merkle proofs from the chosen validators
      */
     function completeSignatureCommitment(
         uint256 id,
@@ -149,7 +150,7 @@ abstract contract LightClientBridge {
         //    can see later)
         processStatement(statement);
 
-        emit FinalVerificationSuccessful(statement, msg.sender, id);
+        emit FinalVerificationSuccessful(msg.sender, statement,  id);
     }
 
     /* Private Functions */
@@ -193,7 +194,7 @@ abstract contract LightClientBridge {
  * @dev Inherits `Ownable` to ensure it can only be callable by the
  * instantiating contract account (which is the LightClientBridge contract)
  */
-abstract contract ValidatorRegistry is Ownable {
+contract ValidatorRegistry is Ownable {
 
     event validatorRegistered(address validator);
     event validatorUnregistered(address validator);
@@ -204,7 +205,7 @@ abstract contract ValidatorRegistry is Ownable {
      */
     bytes32 public validatorSetMerkleRoot;
 
-    constructor() public {}
+    constructor() {}
 
     /**
      * @notice Called in order to register a validator
