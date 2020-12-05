@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0 <0.8.0;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 
 /**
  * @title A entry contract for the Ethereum light client
