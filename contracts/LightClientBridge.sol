@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 
@@ -68,7 +69,7 @@ abstract contract LightClientBridge {
     function newSignatureCommitment(
         bytes32 statement,
         uint256 validatorClaimsBitfield,
-        bytes senderSignatureCommitment,
+        bytes memory senderSignatureCommitment,
         bytes32[] calldata senderPublicKeyMerkleProof
     )
         public
@@ -118,9 +119,9 @@ abstract contract LightClientBridge {
     function completeSignatureCommitment(
         uint256 id,
         bytes32 statement,
-        bytes[] randomSignatureCommitments,
-        uint256[] randomSignatureBitfieldPositions,
-        bytes32[] randomPublicKeyMerkleProofs
+        bytes[] memory randomSignatureCommitments,
+        uint256[] memory randomSignatureBitfieldPositions,
+        bytes32[] memory randomPublicKeyMerkleProofs
     ) public {
         //1 - Calculate the random number, with the same offchain logic, ie:
         //    - get statement.blocknumber, add 45
@@ -155,7 +156,7 @@ abstract contract LightClientBridge {
 
     function validateSignature(
         bytes32 hash,
-        bytes signature,
+        bytes memory signature,
         address checkAddress
     )
         private
@@ -236,7 +237,7 @@ abstract contract ValidatorRegistry is Ownable {
      */
     function checkValidatorInSet(
         uint256 validatorClaimsBitfield,
-        bytes32[] senderPublicKeyMerkleProof,
+        bytes32[] memory senderPublicKeyMerkleProof,
         address validator
     )
         public
