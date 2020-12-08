@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity >=0.5.0 <0.8.0;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
  * @title A entry contract for the Ethereum light client
  */
 contract LightClientBridge {
-
     using SafeMath for uint256;
 
     /* Events */
@@ -72,32 +71,18 @@ contract LightClientBridge {
         uint256 validatorClaimsBitfield,
         bytes memory senderSignatureCommitment,
         bytes32[] calldata senderPublicKeyMerkleProof
-    )
-        public
-        payable
-    {
+    ) public payable {
         //1 - check if senderPublicKeyMerkleProof is valid based on the
         //    ValidatorRegistry merkle root, ie, confirm that the senderPublicKey
         //    is from an active validator, with senderPublicKey being returned
         require(
-            validatorRegistry.checkValidatorInSet(
-                validatorClaimsBitfield,
-                senderPublicKeyMerkleProof,
-                msg.sender
-            ),
+            validatorRegistry.checkValidatorInSet(validatorClaimsBitfield, senderPublicKeyMerkleProof, msg.sender),
             "Error: Sender must be in validator set"
         );
 
         //2 - check if senderSignatureCommitment is correct, ie, check if it matches
         //    the signature of senderPublicKey on the statement
-        require(
-            validateSignature(
-                statement,
-                senderSignatureCommitment,
-                msg.sender
-            ),
-            "Error: Invalid Signature"
-        );
+        require(validateSignature(statement, senderSignatureCommitment, msg.sender), "Error: Invalid Signature");
 
         //3 - we're good now, so record statement, validatorClaimsBitfield,
         //    senderPublicKey, blocknumber, etc
@@ -125,12 +110,11 @@ contract LightClientBridge {
         bytes32[] memory randomPublicKeyMerkleProofs
     ) public {
         //1 - Calculate the random number, with the same offchain logic, ie:
-        //    - get statement.blocknumber, add 45
-        //    - get randomSeedBlockHash
-        //    - create randomSeed with same randomSeed logic as used offchain
-        //    - generate 5 random numbers between 1 and 167
-        //2 - Require random numbers generated onchain match random numbers 
+        // uint8[] = getRandomNumbers()
+
+        //2 - Require random numbers generated onchain match random numbers
         //    provided to transaction
+
         //3 - For each randomSignature, do:
         //    - Take corresponding randomSignatureBitfieldPosition, check with the
         //      onchain bitfield that it corresponds to a positive bitfield entry
@@ -145,12 +129,14 @@ contract LightClientBridge {
         //    - Take corresponding randomSignatureCommitments, check if it is correct,
         //      ie, check if it matches the signature of randomPublicKey on the
         //      statement
+
         //4 - We're good, we accept the statement
+
         //5 - We process the statement (maybe do this in/from another contract
         //    can see later)
-        processStatement(statement);
+        // processStatement(statement);
 
-        emit FinalVerificationSuccessful(msg.sender, statement,  id);
+        emit FinalVerificationSuccessful(msg.sender, statement, id);
     }
 
     /* Private Functions */
@@ -159,17 +145,23 @@ contract LightClientBridge {
         bytes32 hash,
         bytes memory signature,
         address checkAddress
-    )
-        private
-        view
-        returns (bool)
-    {
+    ) private view returns (bool) {
         //TODO Implement this function
         //1. Parse signature values `(uint8 r, bytes32 s, bytes32 v)` from `bytes signature`
         //2. Perform ecrecover(hash, r, s, v)
         //3. Return boolean showing if the `recovered address == checkAddress`
 
         return true;
+    }
+
+    function getRandomNumbers() private view returns (uint8[5] memory) {
+        //    - get statement.blocknumber, add 45
+        //    - get randomSeedBlockHash
+        //    - create randomSeed with same randomSeed logic as used offchain
+        //    - generate 5 random numbers between 1 and 167
+
+        uint8[5] memory nums = [2, 189, 42, 9, 134];
+        return nums;
     }
 
     function processStatement(bytes32 statement) private {
@@ -195,7 +187,6 @@ contract LightClientBridge {
  * instantiating contract account (which is the LightClientBridge contract)
  */
 contract ValidatorRegistry is Ownable {
-
     event validatorRegistered(address validator);
     event validatorUnregistered(address validator);
 
@@ -211,21 +202,13 @@ contract ValidatorRegistry is Ownable {
      * @notice Called in order to register a validator
      * @param validator A validator to register
      */
-    function registerValidator(address validator)
-        public
-        onlyOwner
-        returns (bool success)
-    {}
+    function registerValidator(address validator) public onlyOwner returns (bool success) {}
 
     /**
      * @notice Called in order to unregister a validator
      * @param validator An array of validators to unregister
      */
-    function unregisterValidator(address validator)
-        public
-        onlyOwner
-        returns (bool success)
-    {}
+    function unregisterValidator(address validator) public onlyOwner returns (bool success) {}
 
     /**
      * @notice Checks if a validator is in the set, and if it's address is a member
@@ -240,11 +223,7 @@ contract ValidatorRegistry is Ownable {
         uint256 validatorClaimsBitfield,
         bytes32[] memory senderPublicKeyMerkleProof,
         address validator
-    )
-        public
-        view
-        returns (bool)
-    {
+    ) public view returns (bool) {
         //TODO Logic
         // 1. Perform a check to see if the validator is one of the validators, using the bitfield
         // 2. Check that the merkle proofs verify correctly

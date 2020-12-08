@@ -1,4 +1,4 @@
-const { keccak } = require("./utils")
+import { keccak } from "ethereumjs-util"
 
 /**
  * Deterministic generation of sample data array
@@ -7,12 +7,12 @@ const { keccak } = require("./utils")
  * @example [ ...generateSampleData(60000)] will generate
  * an array of length 60000
  */
-function* generateSampleData(length) {
+function* generateSampleData(length: number): Generator<string, void, unknown> {
   let initial = "snowfork"
   for (let i = 0; i < length; i++) {
-    initial = keccak(initial).toString('hex')
+    initial = keccak(initial).toString("hex")
     yield initial
   }
 }
 
-module.exports = generateSampleData
+export default generateSampleData

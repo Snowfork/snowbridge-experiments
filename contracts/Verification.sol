@@ -1,12 +1,10 @@
 // "SPDX-License-Identifier: Apache-2.0"
 pragma solidity ^0.7.0;
 
-
 /**
  * @title Verifies various hashed data structures
  */
 contract Verification {
-
     /**
      * @notice Verify a flat array of data elements
      *
@@ -14,10 +12,7 @@ contract Verification {
      * @param _commitment the commitment hash to check
      * @return a boolean value representing the success or failure of the operation
      */
-    function verifyMessageArray(
-        bytes32[] calldata _data,
-        bytes32 _commitment
-    ) public pure returns (bool) {
+    function verifyMessageArray(bytes32[] calldata _data, bytes32 _commitment) public pure returns (bool) {
         bytes32 commitment = _data[0];
         for (uint256 i = 1; i < _data.length; i++) {
             commitment = keccak256(abi.encodePacked(commitment, _data[i]));
@@ -37,10 +32,7 @@ contract Verification {
      * @param _commitment the expected merkle root of the structure
      * @return a boolean value representing the success or failure of the operation
      */
-    function verifyMerkleAll(
-        bytes32[] memory _data,
-        bytes32 _commitment
-    ) public pure returns (bool) {
+    function verifyMerkleAll(bytes32[] memory _data, bytes32 _commitment) public pure returns (bool) {
         uint256 hashLength = _data.length;
 
         for (uint256 j = 0; hashLength > 1; j = 0) {

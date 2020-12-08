@@ -1,33 +1,51 @@
-require("@nomiclabs/hardhat-waffle")
-require("@nomiclabs/hardhat-ethers")
-require("@nomiclabs/hardhat-solhint")
+import { subtask, task } from "hardhat/config"
+import { MerkleTree } from "merkletreejs"
+import { buf2hex, hex2buf, getMerkleRoot } from "../utils/utils"
+import { keccak } from "ethereumjs-util"
+import generateSampleData from "../utils/sampleData"
+import type { HardhatRuntimeEnvironment } from "hardhat/types"
 
-task("gasUsage", "Prints out the gas usage for each of the verification functions", async () => {
-  const { MerkleTree } = require("merkletreejs")
-  const { keccak, buf2hex, hex2buf, getMerkleRoot } = require("./src/utils")
-  const generateSampleData = require("./src/sampleData")
-
+const taskSetup = async (hre: HardhatRuntimeEnvironment) => {
   const dataLengths = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
   const dataObjs = dataLengths.map(d => {
     return { length: d, data: [...generateSampleData(d)].map(b => keccak(b)).map(buf2hex) }
   })
 
-  const Verification = await ethers.getContractFactory("Verification")
+  const Verification = await hre.ethers.getContractFactory("Verification")
   const verificationContract = await Verification.deploy()
 
-  console.log("verifyMessageArray function:")
+  return {
+    dataObjs,
+    verificationContract,
+  }
+}
+
+task("gasUsage")
+  .setDescription("Prints out the gas usage for each of the verification functions")
+  .setAction(async (_, { run }) => {
+    await run("verifyMessageArray")
+    await run("verifyMerkleLeaf")
+    await run("verifyMerkleAll")
+  })
+
+subtask("verifyMessageArray").setAction(async (_, hre: HardhatRuntimeEnvironment) => {
+  const { dataObjs, verificationContract } = await taskSetup(hre)
+
   for (let i = 0; i < dataObjs.length; i++) {
     const element = dataObjs[i]
     const commitment = element.data.reduce((prev, curr) =>
-      ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [prev, curr])
+      hre.ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [prev, curr])
     )
     console.log(
       `  ↪ Data length ${element.length}: `,
       (await verificationContract.estimateGas.verifyMessageArray(element.data, commitment)).toString()
     )
   }
+})
 
-  console.log("verifyMerkleLeaf function:")
+subtask("verifyMerkleLeaf").setAction(async (_, hre: HardhatRuntimeEnvironment) => {
+  const { dataObjs, verificationContract } = await taskSetup(hre)
+
   for (let i = 0; i < dataObjs.length; i++) {
     const element = dataObjs[i]
     const tree = new MerkleTree(element.data, keccak, { sort: true })
@@ -39,12 +57,16 @@ task("gasUsage", "Prints out the gas usage for each of the verification function
       (await verificationContract.estimateGas.verifyMerkleLeaf(hexRoot, hexLeaf, hexProof)).toString()
     )
   }
+})
 
-  console.log("verifyMerkleAll function:")
+subtask("verifyMerkleAll").setAction(async (_, hre: HardhatRuntimeEnvironment) => {
+  const { dataObjs, verificationContract } = await taskSetup(hre)
+
   for (let i = 0; i < dataObjs.length; i++) {
     const element = dataObjs[i]
     const sortedLeaves = element.data
       .map(hex2buf)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       .sort(Buffer.compare)
       .map(buf2hex)
     const merkleRoot = getMerkleRoot(sortedLeaves)
@@ -55,16 +77,3 @@ task("gasUsage", "Prints out the gas usage for each of the verification function
     )
   }
 })
-
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
-module.exports = {
-  solidity: "0.7.5",
-  settings: {
-    optimizer: {
-      enabled: true,
-      runs: 1000,
-    },
-  },
-}

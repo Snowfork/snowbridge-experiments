@@ -1,6 +1,7 @@
 /node_modules*
 /build
 /artifacts
+/typechain
 /cache
 /.vscode
 yarn-error.log

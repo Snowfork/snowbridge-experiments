@@ -14,7 +14,6 @@ pragma solidity ^0.7.0;
  */
 
 abstract contract MMRVerification {
-
     // Contract storage:
     // - current byte32 MMR root (future: array of current + previous roots as a circular queue with size N)
     // - current public keys of validator set (optimization: merkle tree of public keys, only store root,
@@ -31,7 +30,7 @@ abstract contract MMRVerification {
         bytes32 newMmrRoot,
         bytes32[] memory signatures,
         uint8[] memory bitmap
-    ) virtual public returns (bool);
+    ) public virtual returns (bool);
 
     /**
      * @dev Updates the current MMR root and updates the validator set. Called instead of
@@ -48,17 +47,14 @@ abstract contract MMRVerification {
         uint8[] memory bitmap,
         bytes32[] memory valPubKeys,
         bytes32[] memory pubKeyProof
-    ) virtual public returns(bool);
+    ) public virtual returns (bool);
 
     /**
      * @dev Updates the set of validator public keys stored on contract.
      * @param valPubKeys new validator public keys.
      * @param pubKeyProof merkle proof of the new validator public keys in the MMR.
      */
-    function updateValSet(
-        bytes32[] memory valPubKeys,
-        bytes32[] memory pubKeyProof
-    ) virtual internal returns (bool);
+    function updateValSet(bytes32[] memory valPubKeys, bytes32[] memory pubKeyProof) internal virtual returns (bool);
 
     /**
      * @dev Validate that a set of messages is contained and executes them.
@@ -74,5 +70,5 @@ abstract contract MMRVerification {
         bytes32[] memory paraHeadSiblingsProof,
         bytes32[] memory messages,
         bytes32[] memory mmrSiblingsProof
-    ) virtual public;
+    ) public virtual;
 }

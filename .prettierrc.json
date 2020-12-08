@@ -1,8 +1,5 @@
 {
-  "endOfLine": "lf",
   "printWidth": 120,
-  "useTabs": false,
-  "spaces": 2,
   "overrides": [
     {
       "files": "*.sol",
@@ -14,7 +11,7 @@
       }
     },
     {
-      "files": "*.js",
+      "files": "*.ts",
       "options": {
         "arrowParens": "avoid",
         "bracketSpacing": true,
