@@ -1,4 +1,4 @@
-import { keccak } from "ethereumjs-util"
+import { keccakFromString } from "ethereumjs-util"
 
 /**
  * Deterministic generation of sample data array
@@ -10,7 +10,7 @@ import { keccak } from "ethereumjs-util"
 function* generateSampleData(length: number): Generator<string, void, unknown> {
   let initial = "snowfork"
   for (let i = 0; i < length; i++) {
-    initial = keccak(initial).toString("hex")
+    initial = keccakFromString(initial).toString("hex")
     yield initial
   }
 }

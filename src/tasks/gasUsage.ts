@@ -1,14 +1,14 @@
 import { subtask, task } from "hardhat/config"
 import { MerkleTree } from "merkletreejs"
 import { buf2hex, hex2buf, getMerkleRoot } from "../utils/utils"
-import { keccak } from "ethereumjs-util"
+import { keccakFromString } from "ethereumjs-util"
 import generateSampleData from "../utils/sampleData"
 import type { HardhatRuntimeEnvironment } from "hardhat/types"
 
 const taskSetup = async (hre: HardhatRuntimeEnvironment) => {
   const dataLengths = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
   const dataObjs = dataLengths.map(d => {
-    return { length: d, data: [...generateSampleData(d)].map(b => keccak(b)).map(buf2hex) }
+    return { length: d, data: [...generateSampleData(d)].map(b => keccakFromString(b)).map(buf2hex) }
   })
 
   const Verification = await hre.ethers.getContractFactory("Verification")
@@ -48,7 +48,7 @@ subtask("verifyMerkleLeaf").setAction(async (_, hre: HardhatRuntimeEnvironment) 
 
   for (let i = 0; i < dataObjs.length; i++) {
     const element = dataObjs[i]
-    const tree = new MerkleTree(element.data, keccak, { sort: true })
+    const tree = new MerkleTree(element.data, keccakFromString, { sort: true })
     const hexRoot = tree.getHexRoot()
     const hexLeaf = element.data[0]
     const hexProof = tree.getHexProof(hex2buf(hexLeaf))

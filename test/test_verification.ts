@@ -1,5 +1,5 @@
 import { expect } from "chai"
-import { keccak } from "ethereumjs-util"
+import { keccak, keccakFromString } from "ethereumjs-util"
 import { ethers } from "hardhat"
 import { MerkleTree } from "merkletreejs"
 import generateSampleData from "../src/utils/sampleData"
@@ -17,7 +17,7 @@ describe("Verification contract", function () {
       verification = (await Verification.deploy()) as Verification
       await verification.deployed()
 
-      const hashedData = [...generateSampleData(100)].map(x => keccak(x))
+      const hashedData = [...generateSampleData(100)].map(x => keccakFromString(x))
       hexData = hashedData.map(buf2hex)
     })
 
@@ -36,7 +36,7 @@ describe("Verification contract", function () {
         ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [prev, curr])
       )
 
-      const badData = ["s", "n", "O", "w", "f", "U", "n", "k"].map(x => keccak(x)).map(buf2hex)
+      const badData = ["s", "n", "O", "w", "f", "U", "n", "k"].map(x => keccakFromString(x)).map(buf2hex)
 
       const result = await verification.verifyMessageArray(badData, commitment)
 
@@ -57,7 +57,7 @@ describe("Verification contract", function () {
       verification = (await Verification.deploy()) as Verification
       await verification.deployed()
 
-      hashedData = [...generateSampleData(100)].map(x => keccak(x))
+      hashedData = [...generateSampleData(100)].map(x => keccakFromString(x))
       hexData = hashedData.map(buf2hex)
     })
 
@@ -87,7 +87,7 @@ describe("Verification contract", function () {
         const hexRoot = tree.getHexRoot()
 
         const correctLeaf = hashedData[0]
-        const incorrectLeaf = keccak("0")
+        const incorrectLeaf = keccakFromString("0")
         const incorrectLeafHex = MerkleTree.bufferToHex(incorrectLeaf)
 
         const proof = tree.getProof(correctLeaf)

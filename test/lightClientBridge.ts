@@ -1,7 +1,7 @@
 import { expect } from "chai"
 import { ethers } from "hardhat"
 import type { LightClientBridge } from "../typechain"
-import { keccak } from "ethereumjs-util"
+import { keccakFromString } from "ethereumjs-util"
 import { buf2hex } from "../src/utils/utils"
 
 /**
@@ -19,10 +19,10 @@ describe("LightClientBridge Contract", function () {
 
   context("newSignatureCommitment function", function () {
     it("Should not throw when submitting a valid newSignatureCommitment", async function () {
-      const statement = buf2hex(keccak("test"))
+      const statement = buf2hex(keccakFromString("test"))
       const validatorClaimsBitfield = 123
       const senderSignatureCommitment = "0x123123123123"
-      const senderPublicKeyMerkleProof = ["s", "n", "o", "w", "f", "u", "n", "k"].map(x => keccak(x)).map(buf2hex)
+      const senderPublicKeyMerkleProof = ["s", "n", "o", "w", "f", "u", "n", "k"].map(x => keccakFromString(x)).map(buf2hex)
 
       const result = await lightClientBridge.newSignatureCommitment(
         statement,
@@ -36,10 +36,10 @@ describe("LightClientBridge Contract", function () {
   })
   context("completeSignatureCommitment function", function () {
     it("Should not throw when calling completeSignatureCommitment after newSignatureCommitment", async function () {
-      const statement = buf2hex(keccak("test"))
+      const statement = buf2hex(keccakFromString("test"))
       const validatorClaimsBitfield = 123
       const senderSignatureCommitment = "0x123123123123"
-      const senderPublicKeyMerkleProof = ["s", "n", "o", "w", "f", "u", "n", "k"].map(x => keccak(x)).map(buf2hex)
+      const senderPublicKeyMerkleProof = ["s", "n", "o", "w", "f", "u", "n", "k"].map(x => keccakFromString(x)).map(buf2hex)
 
       expect(
         await lightClientBridge.newSignatureCommitment(
