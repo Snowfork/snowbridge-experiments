@@ -25,6 +25,7 @@ contract ValidatorRegistry is Ownable {
     /**
      * @notice Called in order to register a validator
      * @param validator A validator to register
+     * @return success Returns true if the validator was registered
      */
     function registerValidator(address validator) public onlyOwner returns (bool success) {
         /**
@@ -36,6 +37,7 @@ contract ValidatorRegistry is Ownable {
     /**
      * @notice Called in order to unregister a validator
      * @param validator An array of validators to unregister
+     * @return success Returns true if the validator was unregistered
      */
     function unregisterValidator(address validator) public onlyOwner returns (bool success) {
         /**
@@ -51,7 +53,7 @@ contract ValidatorRegistry is Ownable {
      * validator who has claimed to have signed the statement
      * @param senderPublicKeyMerkleProof Proof required for validation of the Merkle tree
      * @param validator The address of the validator to check
-     * @return If it is in the set
+     * @return Returns true if the validator is in the set
      */
     function checkValidatorInSet(
         uint256 validatorClaimsBitfield,
