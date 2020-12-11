@@ -6,7 +6,7 @@ import generateSampleData from "../src/utils/sampleData"
 import { buf2hex, getMerkleRoot, hex2buf } from "../src/utils/utils"
 import type { Verification } from "../typechain"
 
-describe("Verification contract", function () {
+describe("Verification Contract", function () {
   let verification: Verification
   let hashedData: Buffer[]
   let hexData: string[]

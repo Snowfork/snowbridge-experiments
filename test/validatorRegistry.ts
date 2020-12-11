@@ -1,7 +1,7 @@
 import { ethers } from "hardhat"
 import type { ValidatorRegistry } from "../typechain"
 
-describe("ValidatorRegistry", function () {
+describe("ValidatorRegistry Contract", function () {
   let validatorRegistry: ValidatorRegistry
 
   beforeEach("Deploy the contract", async function () {
