@@ -2,15 +2,17 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "./utils/Bits.sol";
+import "./ValidatorRegistry.sol";
 
 /**
  * @title A entry contract for the Ethereum light client
  */
 contract LightClientBridge {
     using SafeMath for uint256;
+    using Bits for uint256;
 
     /* Events */
 
@@ -38,17 +40,23 @@ contract LightClientBridge {
     /* Types */
 
     struct ValidationData {
+        address senderAddress;
         bytes32 statement;
         uint256 validatorClaimsBitfield;
         uint256 blockNumber;
-        uint256 id;
     }
 
     /* State */
 
     ValidatorRegistry private validatorRegistry;
     uint256 private count;
-    mapping(bytes32 => ValidationData) public validationData;
+    mapping(uint256 => ValidationData) public validationData;
+
+    /* Constants */
+
+    uint256 constant BLOCK_WAIT_PERIOD = 45;
+    uint256 constant NUMBER_OF_SIGNERS = 5;
+    uint256 constant MAXIMUM_NUM_SIGNERS = 167;
 
     constructor() {
         validatorRegistry = new ValidatorRegistry();
@@ -72,25 +80,26 @@ contract LightClientBridge {
         bytes memory senderSignatureCommitment,
         bytes32[] calldata senderPublicKeyMerkleProof
     ) public payable {
-        //1 - check if senderPublicKeyMerkleProof is valid based on the
-        //    ValidatorRegistry merkle root, ie, confirm that the senderPublicKey
-        //    is from an active validator, with senderPublicKey being returned
+        /**
+         * @dev Check if senderPublicKeyMerkleProof is valid based on ValidatorRegistry merkle root
+         */
         require(
             validatorRegistry.checkValidatorInSet(validatorClaimsBitfield, senderPublicKeyMerkleProof, msg.sender),
             "Error: Sender must be in validator set"
         );
 
-        //2 - check if senderSignatureCommitment is correct, ie, check if it matches
-        //    the signature of senderPublicKey on the statement
-        require(validateSignature(statement, senderSignatureCommitment, msg.sender), "Error: Invalid Signature");
+        /**
+         * @dev Check if senderSignatureCommitment is correct, ie. check if it matches
+         * the signature of senderPublicKey on the statement
+         */
+        require(ECDSA.recover(statement, senderSignatureCommitment) == msg.sender, "Error: Invalid Signature");
 
-        //3 - we're good now, so record statement, validatorClaimsBitfield,
-        //    senderPublicKey, blocknumber, etc
         count = count.add(1);
-        bytes32 dataHash = keccak256(abi.encodePacked(statement, validatorClaimsBitfield, block.number, count));
-        validationData[dataHash] = ValidationData(statement, validatorClaimsBitfield, block.number, count);
+        validationData[count] = ValidationData(msg.sender, statement, validatorClaimsBitfield, block.number);
 
-        //4 - _(only to be done later, lock up sender stake as collateral)_
+        /**
+         * @todo Lock up the sender stake as collateral
+         */
         emit InitialVerificationSuccessful(msg.sender, block.number, count);
     }
 
@@ -100,73 +109,113 @@ contract LightClientBridge {
      * @param statement contains the statement signed by the validator(s)
      * @param randomSignatureCommitments an array of signatures from the randomly chosen validators
      * @param randomSignatureBitfieldPositions an array of bitfields from the chosen validators
+     * @param randomSignerAddresses an array of the ethereum address of each signer
      * @param randomPublicKeyMerkleProofs an array of merkle proofs from the chosen validators
      */
     function completeSignatureCommitment(
         uint256 id,
         bytes32 statement,
-        bytes[] memory randomSignatureCommitments,
-        uint256[] memory randomSignatureBitfieldPositions,
-        bytes32[] memory randomPublicKeyMerkleProofs
+        bytes[NUMBER_OF_SIGNERS] memory randomSignatureCommitments,
+        uint8[NUMBER_OF_SIGNERS] memory randomSignatureBitfieldPositions,
+        address[NUMBER_OF_SIGNERS] memory randomSignerAddresses,
+        bytes32[][NUMBER_OF_SIGNERS] memory randomPublicKeyMerkleProofs
     ) public {
-        //1 - Calculate the random number, with the same offchain logic, ie:
-        // uint8[] = getRandomNumbers()
+        ValidationData storage data = validationData[id];
 
-        //2 - Require random numbers generated onchain match random numbers
-        //    provided to transaction
+        /**
+         * @dev Some simple validation checks
+         * @note Is there anything else we should be checking here?
+         */
+        require(statement == data.statement, "Error: Statement does not match argument");
 
-        //3 - For each randomSignature, do:
-        //    - Take corresponding randomSignatureBitfieldPosition, check with the
-        //      onchain bitfield that it corresponds to a positive bitfield entry
-        //      for a validator that did actually sign
-        //    - Take corresponding randomSignatureCommitments, check with the onchain
-        //      bitfield that it corresponds to a positive bitfield entry for a
-        //      validator that did actually sign
-        //    - Take corresponding randomPublicKeyMerkleProof, check if it is
-        //      valid based on the ValidatorRegistry merkle root, ie, confirm that
-        //      the randomPublicKey is from an active validator, with randomPublicKey
-        //      being returned
-        //    - Take corresponding randomSignatureCommitments, check if it is correct,
-        //      ie, check if it matches the signature of randomPublicKey on the
-        //      statement
+        /**
+         * @dev Generate an array of numbers
+         */
+        uint8[NUMBER_OF_SIGNERS] memory randomNumbers = getRandomNumbers(data);
 
-        //4 - We're good, we accept the statement
+        /**
+         *  @dev For each randomSignature, do:
+         */
+        for (uint256 i = 0; i < NUMBER_OF_SIGNERS; i++) {
+            // @note Require random numbers generated onchain match random numbers
+            // provided to transaction (this requires both arrays to remain in the order they were generated in)
+            require(randomNumbers[i] == randomSignatureBitfieldPositions[i], "Error: Random number error");
 
-        //5 - We process the statement (maybe do this in/from another contract
-        //    can see later)
-        // processStatement(statement);
+            // @note Take corresponding randomSignatureBitfieldPosition, check with the
+            // onchain bitfield that it corresponds to a positive bitfield entry
+            // for a validator that did actually sign
+            uint8 bitFieldPosition = randomSignatureBitfieldPositions[i];
+            require(data.validatorClaimsBitfield.bitSet(bitFieldPosition), "Error: Bitfield positions incorrect");
+
+            // @note Take corresponding randomPublicKeyMerkleProof, check if it is
+            //  valid based on the ValidatorRegistry merkle root, ie, confirm that
+            //  the randomSignerAddress is from an active validator
+            require(
+                validatorRegistry.checkValidatorInSet(
+                    data.validatorClaimsBitfield,
+                    randomPublicKeyMerkleProofs[i],
+                    randomSignerAddresses[i]
+                ),
+                "Error: Sender must be in validator set"
+            );
+
+            // @note Take corresponding randomSignatureCommitments, check if it is correct,
+            // ie. check if it matches the signature of randomSignerAddresses on the statement
+            require(
+                ECDSA.recover(statement, randomSignatureCommitments[i]) == randomSignerAddresses[i],
+                "Error: Invalid Signature"
+            );
+        }
+
+        /**
+         * @follow-up Do we need a try-catch block here?
+         */
+        processStatement(statement);
 
         emit FinalVerificationSuccessful(msg.sender, statement, id);
+
+        /**
+         * @dev We no longer need the data held in state, so delete it for a gas refund
+         */
+        delete validationData[id];
     }
 
     /* Private Functions */
 
-    function validateSignature(
-        bytes32 hash,
-        bytes memory signature,
-        address checkAddress
-    ) private view returns (bool) {
-        //TODO Implement this function
-        //1. Parse signature values `(uint8 r, bytes32 s, bytes32 v)` from `bytes signature`
-        //2. Perform ecrecover(hash, r, s, v)
-        //3. Return boolean showing if the `recovered address == checkAddress`
+    /**
+     * @notice Deterministically generates an array of numbers using the blockhash as a seed
+     * @dev Note that `blockhash(blockNum)` will only work for the 256 most recent blocks
+     * @dev Each generated number must be less than 167
+     * @param data a storage reference to the validationData struct
+     * @return onChainRandNums an array storing the random numbers generated inside this function
+     */
+    function getRandomNumbers(ValidationData storage data)
+        private
+        view
+        returns (uint8[NUMBER_OF_SIGNERS] memory onChainRandNums)
+    {
+        // @note Get statement.blocknumber, add 45
+        uint256 randomSeedBlockNum = data.blockNumber.add(BLOCK_WAIT_PERIOD);
+        // @note Create a hash seed from the block number
+        bytes32 randomSeedBlockHash = blockhash(randomSeedBlockNum);
 
-        return true;
+        /**
+         * @todo This is just a dummy random number generation process until the final implementation is known
+         */
+        for (uint8 i = 0; i < NUMBER_OF_SIGNERS; i++) {
+            randomSeedBlockHash = keccak256(abi.encode(randomSeedBlockHash));
+            // @note Type conversion from bytes32 -> uint8, by way of bytes1 (to work around limitations)
+            onChainRandNums[i] = uint8(bytes1(randomSeedBlockHash));
+        }
     }
 
-    function getRandomNumbers() private view returns (uint8[5] memory) {
-        //    - get statement.blocknumber, add 45
-        //    - get randomSeedBlockHash
-        //    - create randomSeed with same randomSeed logic as used offchain
-        //    - generate 5 random numbers between 1 and 167
-
-        uint8[5] memory nums = [2, 189, 42, 9, 134];
-        return nums;
-    }
-
+    /**
+     * @notice Perform some operation[s] using the statement
+     * @param statement The statement variable passed in via the initial function
+     */
     function processStatement(bytes32 statement) private {
         checkForValidatorSetChanges(statement);
-        // TODO Implement the remaining functionality in this function
+        // @todo Implement this function
     }
 
     /**
@@ -176,58 +225,6 @@ contract LightClientBridge {
      * @param statement The value to check if changes are required
      */
     function checkForValidatorSetChanges(bytes32 statement) private {
-        // TODO Implement this function
-    }
-}
-
-/**
- * @title A contract storing state on the current validator set
- * @dev Stores the validator set as a Merkle root
- * @dev Inherits `Ownable` to ensure it can only be callable by the
- * instantiating contract account (which is the LightClientBridge contract)
- */
-contract ValidatorRegistry is Ownable {
-    event validatorRegistered(address validator);
-    event validatorUnregistered(address validator);
-
-    /**
-     * @notice The merkle root of a merkle tree that contains one leaf for each
-     * validator, with that validators public key
-     */
-    bytes32 public validatorSetMerkleRoot;
-
-    constructor() {}
-
-    /**
-     * @notice Called in order to register a validator
-     * @param validator A validator to register
-     */
-    function registerValidator(address validator) public onlyOwner returns (bool success) {}
-
-    /**
-     * @notice Called in order to unregister a validator
-     * @param validator An array of validators to unregister
-     */
-    function unregisterValidator(address validator) public onlyOwner returns (bool success) {}
-
-    /**
-     * @notice Checks if a validator is in the set, and if it's address is a member
-     * of the merkle tree
-     * @param validatorClaimsBitfield a bitfield containing the membership status of each
-     * validator who has claimed to have signed the statement
-     * @param senderPublicKeyMerkleProof Proof required for validation of the Merkle tree
-     * @param validator The address of the validator to check
-     * @return If it is in the set
-     */
-    function checkValidatorInSet(
-        uint256 validatorClaimsBitfield,
-        bytes32[] memory senderPublicKeyMerkleProof,
-        address validator
-    ) public view returns (bool) {
-        //TODO Logic
-        // 1. Perform a check to see if the validator is one of the validators, using the bitfield
-        // 2. Check that the merkle proofs verify correctly
-
-        return true;
+        // @todo Implement this function
     }
 }
