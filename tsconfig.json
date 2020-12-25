@@ -18,8 +18,9 @@
     "incremental": true,
     "sourceMap": true,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "baseUrl": "."
   },
   "exclude": ["node_modules"],
-  "include": ["src/**/*", "test/**/*", "typechain/**/*", "hardhat.config.ts"]
+  "include": ["src/**/*", "test/**/*", "types/**/*", "hardhat.config.ts"]
 }

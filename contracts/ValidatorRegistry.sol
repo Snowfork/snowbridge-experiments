@@ -3,6 +3,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./MerkleTree.sol";
 
 /**
  * @title A contract storing state on the current validator set
@@ -10,17 +11,22 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev Inherits `Ownable` to ensure it can only be callable by the
  * instantiating contract account (which is the LightClientBridge contract)
  */
-contract ValidatorRegistry is Ownable {
-    event validatorRegistered(address validator);
-    event validatorUnregistered(address validator);
+contract ValidatorRegistry is Ownable, MerkleTree {
+    /* Events */
 
-    /**
-     * @notice The merkle root of a merkle tree that contains one leaf for each
-     * validator, with that validators public key
-     */
-    bytes32 public validatorSetMerkleRoot;
+    event ValidatorRegistered(address validator);
+    event ValidatorUnregistered(address validator);
 
-    constructor() {}
+    /* State */
+
+    uint256 public validatorSetBitfield;
+
+    constructor(bytes32 validatorSetMerkleRoot) MerkleTree(validatorSetMerkleRoot) {
+        uint256 _validatorSetBitfield = 42;
+        validatorSetBitfield = _validatorSetBitfield;
+    }
+
+    /* Public Functions */
 
     /**
      * @notice Called in order to register a validator
@@ -47,24 +53,17 @@ contract ValidatorRegistry is Ownable {
     }
 
     /**
-     * @notice Checks if a validator is in the set, and if it's address is a member
-     * of the merkle tree
-     * @param validatorClaimsBitfield a bitfield containing the membership status of each
-     * validator who has claimed to have signed the statement
-     * @param senderPublicKeyMerkleProof Proof required for validation of the Merkle tree
+     * @notice Checks if a validators address is a member of the merkle tree
      * @param validator The address of the validator to check
+     * @param senderPublicKeyMerkleProof Proof required for validation of the address
      * @return Returns true if the validator is in the set
      */
-    function checkValidatorInSet(
-        uint256 validatorClaimsBitfield,
-        bytes32[] memory senderPublicKeyMerkleProof,
-        address validator
-    ) public view returns (bool) {
-        /**
-         * @todo Implement this function
-         * 1. Perform a check to see if the validator is one of the validators, using the bitfield
-         * 2. Check that the merkle proofs verify correctly
-         */
-        return true;
+    function checkValidatorInSet(address validator, bytes32[] memory senderPublicKeyMerkleProof)
+        public
+        view
+        returns (bool)
+    {
+        bytes32 hashedLeaf = keccak256(abi.encodePacked(validator));
+        return MerkleTree.verify(hashedLeaf, senderPublicKeyMerkleProof);
     }
 }

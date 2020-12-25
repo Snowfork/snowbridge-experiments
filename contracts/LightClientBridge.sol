@@ -48,18 +48,24 @@ contract LightClientBridge {
 
     /* State */
 
-    ValidatorRegistry private validatorRegistry;
-    uint256 private count;
+    ValidatorRegistry public validatorRegistry;
+    uint256 public count;
     mapping(uint256 => ValidationData) public validationData;
 
     /* Constants */
 
-    uint256 constant BLOCK_WAIT_PERIOD = 45;
-    uint256 constant NUMBER_OF_SIGNERS = 5;
-    uint256 constant MAXIMUM_NUM_SIGNERS = 167;
+    uint256 public constant BLOCK_WAIT_PERIOD = 45;
+    uint256 public constant NUMBER_OF_SIGNERS = 5;
+    uint256 public constant MAXIMUM_NUM_SIGNERS = 167;
 
-    constructor() {
-        validatorRegistry = new ValidatorRegistry();
+    /**
+     * @notice Deploys the LightClientBridge contract
+     * @dev If the validatorSetRegistry should be initialised with 0 entries, then input
+     * 0x00 as validatorSetRoot
+     * @param _validatorRegistry The contract to be used as the validator registry
+     */
+    constructor(ValidatorRegistry _validatorRegistry) {
+        validatorRegistry = _validatorRegistry;
         count = 0;
     }
 
@@ -84,7 +90,7 @@ contract LightClientBridge {
          * @dev Check if senderPublicKeyMerkleProof is valid based on ValidatorRegistry merkle root
          */
         require(
-            validatorRegistry.checkValidatorInSet(validatorClaimsBitfield, senderPublicKeyMerkleProof, msg.sender),
+            validatorRegistry.checkValidatorInSet(msg.sender, senderPublicKeyMerkleProof),
             "Error: Sender must be in validator set"
         );
 
@@ -95,6 +101,7 @@ contract LightClientBridge {
         require(ECDSA.recover(statement, senderSignatureCommitment) == msg.sender, "Error: Invalid Signature");
 
         count = count.add(1);
+        /// @follow-up How can we be sure of 1-to-1 relationship between the bitfield position and validator address?
         validationData[count] = ValidationData(msg.sender, statement, validatorClaimsBitfield, block.number);
 
         /**
@@ -151,11 +158,7 @@ contract LightClientBridge {
             //  valid based on the ValidatorRegistry merkle root, ie, confirm that
             //  the randomSignerAddress is from an active validator
             require(
-                validatorRegistry.checkValidatorInSet(
-                    data.validatorClaimsBitfield,
-                    randomPublicKeyMerkleProofs[i],
-                    randomSignerAddresses[i]
-                ),
+                validatorRegistry.checkValidatorInSet(randomSignerAddresses[i], randomPublicKeyMerkleProofs[i]),
                 "Error: Sender must be in validator set"
             );
 

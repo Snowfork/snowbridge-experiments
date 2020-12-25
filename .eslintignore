@@ -6,7 +6,7 @@ contracts/
 node_modules/
 dist/
 lib/
-typechain/
+types/
 
 # files
 .solcover.js

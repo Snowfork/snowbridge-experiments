@@ -1,24 +1,65 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { expect } from "chai"
 import { ethers } from "hardhat"
-import type { ValidatorRegistry } from "../typechain"
+import getMerkleTestData from "./data/merkleTestData"
+import type { ValidatorRegistry } from "types"
+import { hex2buf } from "src/utils/utils"
+
+async function testFixture() {
+  const { merkleTree, verifierAddresses } = await getMerkleTestData()
+  const merkleRoot = merkleTree.getHexRoot()
+
+  const validatorRegistryFactory = await ethers.getContractFactory("ValidatorRegistry")
+  const validatorRegistryContract = (await validatorRegistryFactory.deploy(merkleRoot)) as ValidatorRegistry
+  await validatorRegistryContract.deployed()
+
+  return {
+    validatorRegistryContract,
+    merkleTree,
+    verifierAddresses,
+  }
+}
 
 describe("ValidatorRegistry Contract", function () {
-  let validatorRegistry: ValidatorRegistry
+  context("constructor", function () {
+    it("Should deploy the contract successfully", async function () {
+      const { validatorRegistryContract } = await testFixture()
 
-  beforeEach("Deploy the contract", async function () {
-    const ValidatorRegistry = await ethers.getContractFactory("ValidatorRegistry")
-    validatorRegistry = (await ValidatorRegistry.deploy()) as ValidatorRegistry
-    await validatorRegistry.deployed()
-  })
+      expect(validatorRegistryContract).to.haveOwnProperty("address")
+    })
 
-  context("registerValidator function", function () {
-    it("Should not be payable")
-  })
+    it("Should set the root correctly", async function () {
+      const { validatorRegistryContract, merkleTree } = await testFixture()
 
-  context("unregisterValidator function", function () {
-    it("Should not be payable")
+      expect(await validatorRegistryContract.root()).to.equal(merkleTree.getHexRoot())
+    })
   })
 
   context("checkValidatorInSet function", function () {
-    it("Should not be payable")
+    it("Should correctly verify with valid proofs", async function () {
+      const { validatorRegistryContract, merkleTree, verifierAddresses } = await testFixture()
+
+      const leaf = merkleTree.getLeaves()[0]
+      const proof = merkleTree.getProof(leaf)
+      const hexProof = merkleTree.getHexProof(leaf)
+      const root = hex2buf(await validatorRegistryContract.root())
+      const senderAddress = verifierAddresses[0]
+
+      const result = await validatorRegistryContract.verify(senderAddress, hexProof)
+
+      expect(result).to.be.true
+      expect(merkleTree.verify(proof, leaf, root)).to.be.true
+    })
+
+    it("Should not verify an invalid proof", async function () {
+      const { validatorRegistryContract, merkleTree, verifierAddresses } = await testFixture()
+
+      const leaf = merkleTree.getLeaves()[0]
+      const hexProof = merkleTree.getHexProof(leaf)
+      const badSenderAddress = verifierAddresses[1]
+
+      const result = await validatorRegistryContract.verify(badSenderAddress, hexProof)
+      expect(result).to.be.false
+    })
   })
 })

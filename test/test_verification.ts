@@ -4,7 +4,7 @@ import { ethers } from "hardhat"
 import { MerkleTree } from "merkletreejs"
 import generateSampleData from "../src/utils/sampleData"
 import { buf2hex, getMerkleRoot, hex2buf } from "../src/utils/utils"
-import type { Verification } from "../typechain"
+import type { Verification } from "types"
 
 describe("Verification Contract", function () {
   let verification: Verification
