@@ -11,7 +11,7 @@
     "@nomiclabs/hardhat-solhint": "^2.0.0",
     "@nomiclabs/hardhat-waffle": "^2.0.0",
     "chai": "^4.2.0",
-    "hardhat": "^2.0.2",
+    "hardhat": "^2.0.4",
     "merkletreejs": "^0.2.10",
     "mocha": "^7.2.0",
     "prettier": "^1.19.1",
@@ -33,5 +33,12 @@
   "bugs": {
     "url": "https://github.com/Snowfork/verification-solidity/issues"
   },
-  "homepage": "https://github.com/Snowfork/verification-solidity#readme"
+  "homepage": "https://github.com/Snowfork/verification-solidity#readme",
+  "dependencies": {
+    "chai-as-promised": "^7.1.1",
+    "chai-bn": "^0.2.1",
+    "ethers": "^5.0.23",
+    "solc": "0.7.0",
+    "truffle": "^5.1.60"
+  }
 }

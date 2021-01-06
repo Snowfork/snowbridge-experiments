@@ -13,7 +13,7 @@ pragma solidity ^0.7.0;
     }
  */
 
-abstract contract MMRVerification {
+abstract contract MMRVerificationOriginal {
 
     // Contract storage:
     // - current byte32 MMR root (future: array of current + previous roots as a circular queue with size N)
