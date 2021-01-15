@@ -68,16 +68,18 @@ describe("Verification Contract", function () {
         const root = tree.getRoot()
         const hexRoot = tree.getHexRoot()
 
-        const leaf = hashedData[0]
-        const hexLeaf = MerkleTree.bufferToHex(leaf)
+        for (let i = 0; i < hashedData.length; i++) {
+          const leaf = hashedData[i]
+          const hexLeaf = MerkleTree.bufferToHex(leaf)
 
-        const proof = tree.getProof(leaf)
-        const hexProof = tree.getHexProof(leaf)
+          const proof = tree.getProof(leaf)
+          const hexProof = tree.getHexProof(leaf)
 
-        const result = await verification.verifyMerkleLeaf(hexRoot, hexLeaf, hexProof)
+          const result = await verification.verifyMerkleLeaf(hexRoot, hexLeaf, hexProof)
 
-        expect(tree.verify(proof, leaf, root)).to.be.true
-        expect(result).to.be.true
+          expect(tree.verify(proof, leaf, root)).to.be.true
+          expect(result).to.be.true
+        }
       })
 
       it("Should not verify an array of hashed data, when the commitment is not correct", async function () {
@@ -121,7 +123,6 @@ describe("Verification Contract", function () {
 
       xit("Should verify an array of hashed data, given the commitment is correct", async function () {
         const result = await verification.verifyMerkleAll(sortedLeaves, hexRoot)
-
         expect(result).to.be.true
       })
 
