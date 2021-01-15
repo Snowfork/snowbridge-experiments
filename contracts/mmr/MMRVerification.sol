@@ -10,122 +10,87 @@ pragma solidity ^0.7.0;
  */
 library MMRVerification {
 
-    /**
-     * @dev It returns true when the given params verifies that the given value exists in the MMR.
-     */
-    function inclusionProof(
+    function verifyInclusionProof(
         bytes32 root,
-        uint256 width,
-        uint256 index,
-        bytes32 value,
-        bytes32[] memory peaks,
-        bytes32[] memory siblings
+        bytes32 leafNodeHash,
+        uint256 leafIndex,
+        uint256 leafCount,
+        bytes32[] memory proofItems
     )
-        public pure returns (bool) {
-        uint256 size = getSize(width);
-        require(size >= index, "Index is out of range");
-
-        // Check the root equals the peak bagging hash
-        if(root != combineBaggedPeaks(peaks)) {
+        public pure returns (bool)
+    {
+        uint256 width = leafCount;
+        uint256 leafPos = leafIndexToPos(leafIndex);
+        if(!isLeaf(leafPos)) {
             return false;
         }
 
-        // Find the mountain where the target index belongs to
-        uint256 cursor;
-        bytes32 targetPeak;
+        // Calculate the index of our leaf's mountain peak
+        uint256 targetPeakIndex;
+        uint256 numLeftPeaks;
         uint256[] memory peakIndexes = getPeakIndexes(width);
         for (uint256 i = 0; i < peakIndexes.length; i++) {
-            if (peakIndexes[i] >= index) {
-                targetPeak = peaks[i];
-                cursor = peakIndexes[i];
+            if (peakIndexes[i] >= leafPos) {
+                targetPeakIndex = peakIndexes[i];
                 break;
             }
+            numLeftPeaks = numLeftPeaks + 1;
         }
 
-        // Check target peak found
-        if(targetPeak == bytes32(0)) {
-            return false;
+        // Calculate our leaf's mountain peak hash by hashing siblings in order
+        bytes32 mountainHash = leafNodeHash;
+        uint256 firstSibIndex = numLeftPeaks;
+        uint256 lastSibIndex = proofItems.length-1;
+        for(uint i = firstSibIndex; i < lastSibIndex; i++ ) {
+            mountainHash = keccak256(abi.encodePacked(proofItems[i], mountainHash));
         }
 
-        // Find the path climbing down
-        uint256[] memory path = new uint256[](siblings.length + 1);
-        uint256 left;
-        uint256 right;
-        uint8 height = uint8(siblings.length) + 1;
-        while (height > 0) {
-            // Record the current cursor and climb down
-            path[--height] = cursor;
-            if (cursor == index) {
-                // On the leaf node. Stop climbing down
-                break;
-            } else {
-                // On the parent node. Go left or right
-                (left, right) = getChildren(cursor);
-                cursor = index > left ? right : left;
-                continue;
-            }
+        // Bag the right peaks (they're already rolled up into one hash)
+        bytes32 bagger = keccak256(abi.encodePacked(proofItems[proofItems.length-1], mountainHash));
+
+        // Bag left peaks one-by-one
+        for(uint i = firstSibIndex; i > 0; i--) {
+            bagger = keccak256(abi.encodePacked(bagger, proofItems[i-1]));
         }
 
-        // // Calculate the summit hash climbing up again
-        bytes32 node;
-        while (height < path.length) {
-            // Move cursor
-            cursor = path[height];
-            if (height == 0) {
-                // cursor is on the leaf
-                node = value;
-            } else if (cursor - 1 == path[height - 1]) {
-                // cursor is on a parent and a sibling is on the left
-                node = hashParent(siblings[height - 1], node);
-            } else {
-                // cursor is on a parent and a sibling is on the right
-                node = hashParent(node, siblings[height - 1]);
-            }
-            // Climb up
-            height++;
-        }
-
-        // Computed hash value of the summit should equal to the target peak hash
-        if(node != targetPeak) {
-            return false;
-        }
-        return true;
-    }
-
-  // TODO: Fix so it works with for variable input array lengths
-    function combineBaggedPeaks(bytes32[] memory peakBagging)
-        public
-        pure
-        returns (bytes32 root)
-    {
-        bytes32 temp;
-        for (uint256 i = peakBagging.length - 1; i > 0; i--) {
-            if (i == peakBagging.length - 1) {
-                temp = keccak256(
-                    abi.encodePacked(peakBagging[i], peakBagging[i - 1])
-                );
-            } else {
-                temp = keccak256(abi.encodePacked(temp, peakBagging[i - 1]));
-            }
-        }
-        root = temp;
+        return bagger == root;
     }
 
     function getSize(uint256 width) public pure returns (uint256) {
         return (width << 1) - numOfPeaks(width);
     }
 
-    /**
-     * @dev It returns the hash a parent node with hash(Left child | Right child)
-     *      M is the index of the node
-     */
-
-    function hashParent(bytes32 left, bytes32 right)
-        public
-        pure
-        returns (bytes32)
+    // Counts the number of 1s in the binary representation of an integer
+    function bitCount(uint256 n) public pure returns(uint256)
     {
-        return keccak256(abi.encodePacked(left, right));
+        uint256 count;
+        while(n > 0) {
+            count = count + 1;
+            n = n & (n-1);
+        }
+        return count;
+    }
+
+   function leafIndexToPos(uint256 index) public pure returns(uint256) {
+        return leafIndexToMmrSize(index) - trailingZeros(index+1);
+    }
+
+    function leafIndexToMmrSize(uint256 index) public pure returns(uint256) {
+        uint256 leavesCount = index + 1;
+        uint256 peaksCount = bitCount(leavesCount);
+        return (2 * leavesCount) - peaksCount;
+    }
+
+    // Counts the number of 1s in the binary representation of an integer
+    function trailingZeros(uint256 x) public pure returns(uint256)
+    {
+       if (x == 0) return(32);
+       uint256 n = 1;
+       if ((x & 0x0000FFFF) == 0) {n = n +16; x = x >>16;}
+       if ((x & 0x000000FF) == 0) {n = n + 8; x = x >> 8;}
+       if ((x & 0x0000000F) == 0) {n = n + 4; x = x >> 4;}
+       if ((x & 0x00000003) == 0) {n = n + 2; x = x >> 2;}
+       return n - (x & 1);
     }
 
     /**
@@ -160,19 +125,6 @@ library MMRVerification {
      */
     function isLeaf(uint256 index) public pure returns (bool) {
         return heightAt(index) == 1;
-    }
-
-    /**
-     * @dev It returns the children when it is a parent node
-     */
-    function getChildren(uint256 index)
-        public
-        pure
-        returns (uint256 left, uint256 right)
-    {
-        left = index - (uint256(1) << (heightAt(index) - 1));
-        right = index - 1;
-        require(left != right, "Not a parent");
     }
 
     /**
