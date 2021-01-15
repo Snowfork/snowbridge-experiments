@@ -54,16 +54,16 @@ contract ValidatorRegistry is Ownable, MerkleTree {
 
     /**
      * @notice Checks if a validators address is a member of the merkle tree
-     * @param validator The address of the validator to check
-     * @param senderPublicKeyMerkleProof Proof required for validation of the address
+     * @param validatorAddress The address of the validator to check
+     * @param validatorAddressMerkleProof Proof required for validation of the address
      * @return Returns true if the validator is in the set
      */
-    function checkValidatorInSet(address validator, bytes32[] memory senderPublicKeyMerkleProof)
+    function checkValidatorInSet(address validatorAddress, bytes32[] memory validatorAddressMerkleProof)
         public
         view
         returns (bool)
     {
-        bytes32 hashedLeaf = keccak256(abi.encodePacked(validator));
-        return MerkleTree.verify(hashedLeaf, senderPublicKeyMerkleProof);
+        bytes32 hashedLeaf = keccak256(abi.encodePacked(validatorAddress));
+        return MerkleTree.verify(hashedLeaf, validatorAddressMerkleProof);
     }
 }
