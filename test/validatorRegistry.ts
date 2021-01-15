@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { ethers } from "hardhat"
 import getMerkleTestData from "./data/merkleTestData"
 import type { ValidatorRegistry } from "types"
-import { hex2buf } from "src/utils/utils"
+import { hex2buf } from "../src/utils/utils"
 
 async function testFixture() {
   const { merkleTree, verifierAddresses } = await getMerkleTestData()

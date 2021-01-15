@@ -127,10 +127,10 @@ describe.only("LightClientBridge Contract", function () {
       const completionResult = await lightClientBridgeContract.completeSignatureCommitment(
         countId,
         statement,
-        randomSignatureCommitments,
-        randomSignatureBitfieldPositions,
-        randomSignerAddresses,
-        randomPublicKeyMerkleProofs
+        (randomSignatureCommitments as any),
+        (randomSignatureBitfieldPositions as any),
+        (randomSignerAddresses as any),
+        (randomPublicKeyMerkleProofs as any)
       )
     })
   })
