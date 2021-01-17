@@ -1,6 +1,4 @@
 const MMRVerification = artifacts.require('MMRVerification');
-const MMRBuilderWrapper = artifacts.require('MMRBuilderWrapper');
-const MMRBuilder = artifacts.require('MMRBuilder');
 
 const chai = require('chai');
 chai.use(require('chai-bn')(web3.utils.BN));
@@ -8,13 +6,9 @@ chai.use(require('chai-as-promised'));
 chai.should();
 
 contract('MMRVerification', async () => {
-  let mmrLib;
   let mmrVerification;
 
   before(async () => {
-    mmrLib = await MMRBuilder.new();
-    await MMRBuilderWrapper.link('MMRBuilder', mmrLib.address);
-
     mmrVerification = await MMRVerification.new();
   });
 
