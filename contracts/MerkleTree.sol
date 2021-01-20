@@ -36,4 +36,10 @@ contract MerkleTree {
         // Check if the computed hash (root) is equal to the provided root
         return computedHash == root;
     }
+
+    /**
+     * @notice Verify that a specific leaf element is part of the Merkle Tree at a specific position in the tree
+     * @return a boolean value representing the success or failure of the operation
+     */
+    function verifyAtPosition()
 }

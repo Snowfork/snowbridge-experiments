@@ -135,3 +135,29 @@ describe.only("LightClientBridge Contract", function () {
     })
   })
 })
+
+// Attack vectors to test
+/*
+TODO
+
+newSignatureCommitment:
+  - tests for incorrect/gamed initial validatorPublicKey/validatorPublicKeyMerkleProof/validatorSignatureCommitment ?maybe not even needed actually?
+  - validatorClaimsBitfield initial submitted with not enough claims, or too short, or too long?
+
+completeSignatureCommitment:
+  - fake random numbers not following algo
+  - can the random number generator be fooled/gamed? assess how it works in detail and think about attack vectors on it.
+  - correct sigs, but claim validator didnt sign when they actually did?
+  - correct sigs, but claim validator signed when they actually didnt?
+  - correct sigs, but wrong bitfield position, not actually following rando
+  - incorrect/fake sig for some validator?
+  - processing:
+    - correct statement, but actually an old one or one without latest new mmr
+    - correct statement, but skips some epochs so opens a gap?
+    - correct statement, but doesnt actually include correct mmrproof to newest leaf
+    - correct statement, but actually includes mmrproof to old leaf
+    - correct statement, correct mmrproof, but actually wrong beefy_authority_set_merkle_root
+
+- can the Bits.sol implementation be games/is it fully secure? assess how it works in detail and think about attack vectors on it.
+
+*/

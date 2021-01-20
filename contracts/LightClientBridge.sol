@@ -30,7 +30,7 @@ contract LightClientBridge {
 
     /**
      * @notice Notifies an observer that the complete verification process has
-     *  finished successfuly and the block will be accepted
+     *  finished successfuly and the new statement will be accepted
      * @param prover The address of the successful prover
      * @param statement the statement which was approved for inclusion
      * @param id the identifier used
@@ -75,38 +75,46 @@ contract LightClientBridge {
      * @notice Executed by the prover in order to begin the process of block
      * acceptance by the light client
      * @param statement contains the statement signed by the validator(s)
-     * @param validatorClaimsBitfield a bitfield containing the membership status of each
+     * @param validatorClaimsBitfield a bitfield containing a membership status of each
      * validator who has claimed to have signed the statement
-     * @param senderSignatureCommitment the signature of an arbitrary validator
-     * @param senderPublicKeyMerkleProof Proof required for validation of the Merkle tree
+     * @param validatorPublicKey the public key of an arbitrary validator
+     * @param validatorSignatureCommitment the signature of an arbitrary validator
+     * @param validatorPublicKeyMerkleProof Proof required for validation of the Merkle tree
      */
     function newSignatureCommitment(
         bytes32 statement,
         uint256 validatorClaimsBitfield,
-        bytes memory senderSignatureCommitment,
-        bytes32[] calldata senderPublicKeyMerkleProof
+        bytes memory validatorSignatureCommitment,
+        address validatorPublicKey,
+        bytes32[] calldata validatorPublicKeyMerkleProof
     ) public payable {
         /**
-         * @dev Check if senderPublicKeyMerkleProof is valid based on ValidatorRegistry merkle root
+         * @dev Check if validatorPublicKeyMerkleProof is valid based on ValidatorRegistry merkle root
          */
         require(
-            validatorRegistry.checkValidatorInSet(msg.sender, senderPublicKeyMerkleProof),
+            validatorRegistry.checkValidatorInSet(validatorPublicKey, validatorPublicKeyMerkleProof),
             "Error: Sender must be in validator set"
         );
 
         /**
-         * @dev Check if senderSignatureCommitment is correct, ie. check if it matches
+         * @dev Check if validatorSignatureCommitment is correct, ie. check if it matches
          * the signature of senderPublicKey on the statement
          */
-        require(ECDSA.recover(statement, senderSignatureCommitment) == msg.sender, "Error: Invalid Signature");
+        require(ECDSA.recover(statement, validatorSignatureCommitment) == validatorPublicKey, "Error: Invalid Signature");
 
+        /**
+         * @dev Check that the bitfield actually contains enough claims to be succesful, ie, > 2/3
+         */
+        // TODO
+
+        // Accept and save the commitment
         count = count.add(1);
-        /// @follow-up How can we be sure of 1-to-1 relationship between the bitfield position and validator address?
         validationData[count] = ValidationData(msg.sender, statement, validatorClaimsBitfield, block.number);
 
         /**
          * @todo Lock up the sender stake as collateral
          */
+        // TODO
         emit InitialVerificationSuccessful(msg.sender, block.number, count);
     }
 
@@ -116,7 +124,7 @@ contract LightClientBridge {
      * @param statement contains the statement signed by the validator(s)
      * @param randomSignatureCommitments an array of signatures from the randomly chosen validators
      * @param randomSignatureBitfieldPositions an array of bitfields from the chosen validators
-     * @param randomSignerAddresses an array of the ethereum address of each signer
+     * @param randomValidatorAddresses an array of the ethereum address of each signer
      * @param randomPublicKeyMerkleProofs an array of merkle proofs from the chosen validators
      */
     function completeSignatureCommitment(
@@ -124,16 +132,10 @@ contract LightClientBridge {
         bytes32 statement,
         bytes[NUMBER_OF_SIGNERS] memory randomSignatureCommitments,
         uint8[NUMBER_OF_SIGNERS] memory randomSignatureBitfieldPositions,
-        address[NUMBER_OF_SIGNERS] memory randomSignerAddresses,
+        address[NUMBER_OF_SIGNERS] memory randomValidatorAddresses,
         bytes32[][NUMBER_OF_SIGNERS] memory randomPublicKeyMerkleProofs
     ) public {
         ValidationData storage data = validationData[id];
-
-        /**
-         * @dev Some simple validation checks
-         * @note Is there anything else we should be checking here?
-         */
-        require(statement == data.statement, "Error: Statement does not match argument");
 
         /**
          * @dev Generate an array of numbers
@@ -156,16 +158,16 @@ contract LightClientBridge {
 
             // @note Take corresponding randomPublicKeyMerkleProof, check if it is
             //  valid based on the ValidatorRegistry merkle root, ie, confirm that
-            //  the randomSignerAddress is from an active validator
+            //  the randomSignerAddress is from an active validator and is at the correct position
             require(
-                validatorRegistry.checkValidatorInSet(randomSignerAddresses[i], randomPublicKeyMerkleProofs[i]),
-                "Error: Sender must be in validator set"
+                validatorRegistry.checkValidatorInSet(randomValidatorAddresses[i], randomPublicKeyMerkleProofs[i], i),
+                "Error: Sender must be in validator set at correct position"
             );
 
             // @note Take corresponding randomSignatureCommitments, check if it is correct,
-            // ie. check if it matches the signature of randomSignerAddresses on the statement
+            // ie. check if it matches the signature of randomValidatorAddresses on the statement
             require(
-                ECDSA.recover(statement, randomSignatureCommitments[i]) == randomSignerAddresses[i],
+                ECDSA.recover(data.statement, randomSignatureCommitments[i]) == randomValidatorAddresses[i],
                 "Error: Invalid Signature"
             );
         }
@@ -173,7 +175,7 @@ contract LightClientBridge {
         /**
          * @follow-up Do we need a try-catch block here?
          */
-        processStatement(statement);
+        processStatement(data.statement);
 
         emit FinalVerificationSuccessful(msg.sender, statement, id);
 
@@ -188,7 +190,7 @@ contract LightClientBridge {
     /**
      * @notice Deterministically generates an array of numbers using the blockhash as a seed
      * @dev Note that `blockhash(blockNum)` will only work for the 256 most recent blocks
-     * @dev Each generated number must be less than 167
+     * @dev Each generated number must be less than MAXIMUM_NUM_SIGNERS
      * @param data a storage reference to the validationData struct
      * @return onChainRandNums an array storing the random numbers generated inside this function
      */
@@ -197,10 +199,11 @@ contract LightClientBridge {
         view
         returns (uint8[NUMBER_OF_SIGNERS] memory onChainRandNums)
     {
-        // @note Get statement.blocknumber, add 45
+        // @note Get statement.blocknumber, add BLOCK_WAIT_PERIOD
         uint256 randomSeedBlockNum = data.blockNumber.add(BLOCK_WAIT_PERIOD);
         // @note Create a hash seed from the block number
         bytes32 randomSeedBlockHash = blockhash(randomSeedBlockNum);
+        //TODO: What happens if randomSeedBlockNum is too far in the past? Will we get an error/revert?
 
         /**
          * @todo This is just a dummy random number generation process until the final implementation is known
@@ -217,17 +220,42 @@ contract LightClientBridge {
      * @param statement The statement variable passed in via the initial function
      */
     function processStatement(bytes32 statement) private {
-        checkForValidatorSetChanges(statement);
-        // @todo Implement this function
+
+        // Check the statement is newer than the latest
+        // Todo
+
+        // Check the statement is within the last epoch, or for the next epoch
+        // Todo
+
+        // latestMMRRoot = statement.mmrRoot;
+
+        applyValidatorSetChanges(statement);
     }
 
     /**
-     * @notice Check if the statement includes instruction to change the validator set,
-     * and if it does then make the required changes
+     * @notice Check if the statement includes a new validator set,
+     * and if it does then update the new validator set
      * @dev This function should call out to the validator registry contract
      * @param statement The value to check if changes are required
      */
-    function checkForValidatorSetChanges(bytes32 statement) private {
+    function applyValidatorSetChanges(bytes32 statement) private {
         // @todo Implement this function
+        // statement should contain a new root AND a MMR proof to the newest leaf
+
+        // check proof is for the newest leaf and is valid
+
+        // in the new leaf we should have
+        /*
+        		MmrLeaf {
+			parent_hash: frame_system::Module::<T>::leaf_data(),
+			parachain_heads: Module::<T>::parachain_heads_merkle_root(),
+			beefy_authority_set: Module::<T>::beefy_authority_set_merkle_root(),
+		}
+        */
+
+        // get beefy_authority_set from newest leaf
+
+        // update authority set
+        // validatorRegistry.updateValidatorSet(beefy_authority_set)
     }
 }
