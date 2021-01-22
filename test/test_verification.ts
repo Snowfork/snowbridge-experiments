@@ -6,6 +6,27 @@ import generateSampleData from "../src/utils/sampleData"
 import { buf2hex, getMerkleRoot, hex2buf } from "../src/utils/utils"
 import type { Verification } from "types"
 
+async function testFixture(options: { leafCount: number }) {
+  const VerificationFactory = await ethers.getContractFactory("Verification")
+  const verificationContract = (await VerificationFactory.deploy()) as Verification
+  await verificationContract.deployed()
+
+  const hashedData = [...generateSampleData(options.leafCount)].map(x => keccakFromString(x))
+  const hexData = hashedData.map(buf2hex)
+
+  // eslint-disable-next-line @typescript-eslint/unbound-method
+  const sortedLeaves: string[] = hashedData.sort(Buffer.compare).map(buf2hex)
+  const hexRoot: string = getMerkleRoot(sortedLeaves.map(x => x))
+
+  return {
+    verificationContract,
+    hashedData,
+    hexData,
+    sortedLeaves,
+    hexRoot,
+  }
+}
+
 describe("Verification Contract", function () {
   let verification: Verification
   let hashedData: Buffer[]
@@ -111,30 +132,48 @@ describe("Verification Contract", function () {
     })
 
     describe("When verifying all leaves in the tree", function () {
-      let sortedLeaves: string[]
-      let hexRoot: string
-
-      beforeEach(function () {
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        sortedLeaves = hashedData.sort(Buffer.compare).map(buf2hex)
-
-        hexRoot = getMerkleRoot(sortedLeaves.map(x => x))
+      it("Should verify a commitment correctly when the number of leaves is even", async function () {
+        const { hexRoot, sortedLeaves, verificationContract } = await testFixture({
+          leafCount: 100,
+        })
+        const result = await verificationContract.verifyMerkleAll(sortedLeaves, hexRoot)
+        expect(result).to.be.true
       })
 
-      xit("Should verify an array of hashed data, given the commitment is correct", async function () {
-        const result = await verification.verifyMerkleAll(sortedLeaves, hexRoot)
+      it("Should verify a commitment correctly when the number of leaves is odd", async function () {
+        const { hexRoot, sortedLeaves, verificationContract } = await testFixture({
+          leafCount: 5,
+        })
+        const result = await verificationContract.verifyMerkleAll(sortedLeaves, hexRoot)
+        expect(result).to.be.true
+      })
+
+      it("Should verify a commitment correctly with 1 leaf", async function () {
+        const { hexRoot, sortedLeaves, verificationContract } = await testFixture({
+          leafCount: 1,
+        })
+        const result = await verificationContract.verifyMerkleAll(sortedLeaves, hexRoot)
+        expect(result).to.be.true
+      })
+
+      it("Should verify a commitment correctly with 2 leaves", async function () {
+        const { hexRoot, sortedLeaves, verificationContract } = await testFixture({
+          leafCount: 2,
+        })
+        const result = await verificationContract.verifyMerkleAll(sortedLeaves, hexRoot)
         expect(result).to.be.true
       })
 
       it("Should not verify an array of hashed data, when the commitment is not correct", async function () {
+        const { hexRoot, sortedLeaves, verificationContract } = await testFixture({
+          leafCount: 10,
+        })
         sortedLeaves[2] = sortedLeaves[3]
 
-        const result = await verification.verifyMerkleAll(sortedLeaves, hexRoot)
+        const result = await verificationContract.verifyMerkleAll(sortedLeaves, hexRoot)
         expect(result).to.be.false
       })
-      it("Should not revert when called", async function () {
-        await expect(verification.verifyMerkleAll(sortedLeaves, hexRoot)).to.not.be.reverted
-      })
+
     })
   })
 })
