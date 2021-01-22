@@ -37,7 +37,7 @@ async function testFixture() {
  * Note: We can use Waffle's chai matchers here without explicitly
  * stating `chai.use(solidity)`
  */
-describe.only("LightClientBridge Contract", function () {
+describe("LightClientBridge Contract", function () {
   context("constructor", function () {
     it("Should deploy the contract successfully", async function () {
       const { lightClientBridgeContract } = await testFixture()
