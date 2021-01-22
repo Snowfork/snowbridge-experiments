@@ -35,6 +35,7 @@ contract Verification {
     function verifyMerkleAll(bytes32[] memory _data, bytes32 _commitment) public pure returns (bool) {
         uint256 hashLength = _data.length;
 
+        // TODO: Fix logic to handle odd number of leaves correctly
         for (uint256 j = 0; hashLength > 1; j = 0) {
             for (uint256 i = 0; i < hashLength; i = i + 2) {
                 _data[j] = keccak256(abi.encodePacked(_data[i], _data[i + 1]));
