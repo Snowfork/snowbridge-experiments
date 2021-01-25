@@ -96,11 +96,16 @@ contract LightClientBridge {
             "Error: Sender must be in validator set"
         );
 
+        // TODO also add a check here that the signing validator is in validatorClaimsBitfield
+
         /**
          * @dev Check if validatorSignatureCommitment is correct, ie. check if it matches
          * the signature of senderPublicKey on the statement
          */
-        require(ECDSA.recover(statement, validatorSignatureCommitment) == validatorPublicKey, "Error: Invalid Signature");
+        require(
+            ECDSA.recover(statement, validatorSignatureCommitment) == validatorPublicKey,
+            "Error: Invalid Signature"
+        );
 
         /**
          * @dev Check that the bitfield actually contains enough claims to be succesful, ie, > 2/3
@@ -137,6 +142,8 @@ contract LightClientBridge {
     ) public {
         ValidationData storage data = validationData[id];
 
+        // TODO verify that sender is the same as in `newSignatureCommitment` (who? singer or relayer?)
+
         /**
          * @dev Generate an array of numbers
          */
@@ -160,7 +167,7 @@ contract LightClientBridge {
             //  valid based on the ValidatorRegistry merkle root, ie, confirm that
             //  the randomSignerAddress is from an active validator and is at the correct position
             require(
-                validatorRegistry.checkValidatorInSet(randomValidatorAddresses[i], randomPublicKeyMerkleProofs[i], i),
+                validatorRegistry.checkValidatorInSet(randomValidatorAddresses[i], randomPublicKeyMerkleProofs[i]),
                 "Error: Sender must be in validator set at correct position"
             );
 
@@ -213,6 +220,7 @@ contract LightClientBridge {
             // @note Type conversion from bytes32 -> uint8, by way of bytes1 (to work around limitations)
             onChainRandNums[i] = uint8(bytes1(randomSeedBlockHash));
         }
+        // TODO this might lead to duplicate entries?
     }
 
     /**
@@ -220,7 +228,6 @@ contract LightClientBridge {
      * @param statement The statement variable passed in via the initial function
      */
     function processStatement(bytes32 statement) private {
-
         // Check the statement is newer than the latest
         // Todo
 
@@ -241,9 +248,7 @@ contract LightClientBridge {
     function applyValidatorSetChanges(bytes32 statement) private {
         // @todo Implement this function
         // statement should contain a new root AND a MMR proof to the newest leaf
-
         // check proof is for the newest leaf and is valid
-
         // in the new leaf we should have
         /*
         		MmrLeaf {
@@ -252,9 +257,7 @@ contract LightClientBridge {
 			beefy_authority_set: Module::<T>::beefy_authority_set_merkle_root(),
 		}
         */
-
         // get beefy_authority_set from newest leaf
-
         // update authority set
         // validatorRegistry.updateValidatorSet(beefy_authority_set)
     }

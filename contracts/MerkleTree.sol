@@ -41,5 +41,7 @@ contract MerkleTree {
      * @notice Verify that a specific leaf element is part of the Merkle Tree at a specific position in the tree
      * @return a boolean value representing the success or failure of the operation
      */
-    function verifyAtPosition()
+    // function verifyAtPosition() {
+    //     // TODO
+    // }
 }

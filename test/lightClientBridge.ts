@@ -2,7 +2,7 @@ import { expect } from "chai"
 import { ethers, waffle, artifacts } from "hardhat"
 import { ecsign } from "ethereumjs-util"
 import getMerkleTestData from "./data/merkleTestData"
-import type { LightClientBridge } from "types"
+import { LightClientBridge } from "../types"
 
 const NUMBER_OF_SIGNERS = 5
 
@@ -38,7 +38,7 @@ async function testFixture() {
  * stating `chai.use(solidity)`
  */
 describe.only("LightClientBridge Contract", function () {
-  context("constructor", function () {
+  describe("constructor", function () {
     it("Should deploy the contract successfully", async function () {
       const { lightClientBridgeContract } = await testFixture()
 
@@ -58,7 +58,7 @@ describe.only("LightClientBridge Contract", function () {
     })
   })
 
-  context("newSignatureCommitment function", function () {
+  describe("newSignatureCommitment function", function () {
     it("Should not revert when submitting a valid newSignatureCommitment", async function () {
       const { lightClientBridgeContract, mockValidatorRegistry, merkleTree, verifierAddresses } = await testFixture()
       const [signer] = await ethers.getSigners()
@@ -80,13 +80,24 @@ describe.only("LightClientBridge Contract", function () {
         statement,
         validatorClaimsBitfield,
         senderSignatureCommitment,
+        signer.address,
         senderPublicKeyMerkleProof
       )
       expect(result).to.not.be.reverted
+
+      expect(await lightClientBridgeContract.count()).to.equal(1)
+
+      // TODO add assertion for the stake being locked up (whose stake? signer? or relayer?)
+      // TODO add assertion for the event being emitted
     })
+
+    it("Should revert when validatorPublicKey is not in in validatorRegistry given validatorPublicKeyMerkleProof")
+    it("Should revert when validatorPublicKey is not in validatorClaimsBitfield")
+    it("Should revert when validatorPublicKey is not signer of statement in validatorSignatureCommitment")
+    it("Should revert when validatorClaimsBitfield is too short")
   })
 
-  context("completeSignatureCommitment function", function () {
+  describe("completeSignatureCommitment function", function () {
     it("Should not revert when calling completeSignatureCommitment after newSignatureCommitment", async function () {
       const { lightClientBridgeContract, mockValidatorRegistry, merkleTree, verifierAddresses } = await testFixture()
       const [signer] = await ethers.getSigners()
@@ -108,6 +119,7 @@ describe.only("LightClientBridge Contract", function () {
         statement,
         validatorClaimsBitfield,
         senderSignatureCommitment,
+        signer.address,
         senderPublicKeyMerkleProof
       )
       expect(newSigResult).to.not.be.reverted
@@ -127,37 +139,33 @@ describe.only("LightClientBridge Contract", function () {
       const completionResult = await lightClientBridgeContract.completeSignatureCommitment(
         countId,
         statement,
-        (randomSignatureCommitments as any),
-        (randomSignatureBitfieldPositions as any),
-        (randomSignerAddresses as any),
-        (randomPublicKeyMerkleProofs as any)
+        randomSignatureCommitments as any,
+        randomSignatureBitfieldPositions as any,
+        randomSignerAddresses as any,
+        randomPublicKeyMerkleProofs as any
       )
+
+      // TODO add assertion for the stake being refundend
+
+      // TODO add assertion for processStatement being called
+
+      // TODO add assertion for event being emitted
+    })
+
+    it("Should revert when random signature positions are different (different bitfield)")
+    it(
+      "Should revert when a signature is randomly provided that was not in the validatorClaimsBitField when newSignatureCommitment was called"
+    )
+    it("Should revert when a randomValidatorAddresses is not in in validatorRegistry given randomPublicKeyMerkleProofs")
+    it("Should revert when a randomValidatorAddresses is not signer of statement in randomSignatureCommitments")
+    it("Should revert when statement is not for the current validator set") // TODO is that not covered above? Do we need other test cases here?
+    it("Should revert when statement is older than latest committed one") // TODO is that not covered above? Do we need other test cases here?
+    it("Should revert when statement is not for a previous epoch") // TODO is that not covered above? Do we need other test cases here?
+    it("Should revert when statement is not for the next epoch but has no validator set changes") // TODO is that not covered above? Do we need other test cases here?
+    it("Should revert when statement is not for a future epoch after the next") // TODO is that not covered above? Do we need other test cases here?
+
+    context("validator set changes", function () {
+      it("should correctly call the method to update the validator set of mockValidatorRegistry")
     })
   })
 })
-
-// Attack vectors to test
-/*
-TODO
-
-newSignatureCommitment:
-  - tests for incorrect/gamed initial validatorPublicKey/validatorPublicKeyMerkleProof/validatorSignatureCommitment ?maybe not even needed actually?
-  - validatorClaimsBitfield initial submitted with not enough claims, or too short, or too long?
-
-completeSignatureCommitment:
-  - fake random numbers not following algo
-  - can the random number generator be fooled/gamed? assess how it works in detail and think about attack vectors on it.
-  - correct sigs, but claim validator didnt sign when they actually did?
-  - correct sigs, but claim validator signed when they actually didnt?
-  - correct sigs, but wrong bitfield position, not actually following rando
-  - incorrect/fake sig for some validator?
-  - processing:
-    - correct statement, but actually an old one or one without latest new mmr
-    - correct statement, but skips some epochs so opens a gap?
-    - correct statement, but doesnt actually include correct mmrproof to newest leaf
-    - correct statement, but actually includes mmrproof to old leaf
-    - correct statement, correct mmrproof, but actually wrong beefy_authority_set_merkle_root
-
-- can the Bits.sol implementation be games/is it fully secure? assess how it works in detail and think about attack vectors on it.
-
-*/
