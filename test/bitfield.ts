@@ -1,13 +1,9 @@
 import { expect } from "chai"
-import { BigNumber } from "ethers"
-import { ethers, waffle, artifacts } from "hardhat"
+import { ethers } from "hardhat"
 import { Bitfield } from "../types"
+import { bigNumberArrayToBin } from "./utils/binary"
 
-/**
- * Note: We can use Waffle's chai matchers here without explicitly
- * stating `chai.use(solidity)`
- */
-describe.only("Bitfield Contract", function () {
+describe("Bitfield contract", function () {
   let bitfield: Bitfield
 
   beforeEach(async function () {
@@ -17,13 +13,13 @@ describe.only("Bitfield Contract", function () {
   })
 
   describe("constructor", function () {
-    it("Should deploy the contract successfully", async function () {
+    it("should deploy the contract successfully", async function () {
       expect(bitfield).to.haveOwnProperty("address")
     })
   })
 
-  describe("newSignatureCommitment function", function () {
-    it("Should work for different seeds and lengths", async function () {
+  describe("randomNBits function", function () {
+    it("should work for different seeds, lengths and bits to be set", async function () {
       const cases = [
         { seed: "0x00", length: 0, n: 0, result: "" },
         { seed: "0x00", length: 4, n: 2, result: "1100" },
@@ -82,93 +78,4 @@ describe.only("Bitfield Contract", function () {
       }
     })
   })
-
-  describe("bigNumberArrayToHex util", function () {
-    it("works", function () {
-      expect(bigNumberArrayToBin([BigNumber.from(1)])).to.equal(
-        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-          "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-          "0000000000000000000000000000000000000000000000000000000000000001"
-      )
-      expect(bigNumberArrayToBin([BigNumber.from(17)])).to.equal(
-        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-          "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-          "0000000000000000000000000000000000000000000000000000000000010001"
-      )
-    })
-  })
 })
-
-function bigNumberArrayToBin(bns: BigNumber[]): string {
-  return hexToBin(bigNumberArrayToHex(bns))
-}
-
-function bigNumberArrayToHex(bns: BigNumber[]): string {
-  let hex = ""
-
-  for (let bn of bns) {
-    hex = bn.toHexString().replace("0x", "").padStart(64, "0") + hex
-  }
-
-  return hex
-}
-
-function hexToBin(hex: string): string {
-  let bin = ""
-  for (var c of hex) {
-    switch (c) {
-      case "0":
-        bin += "0000"
-        break
-      case "1":
-        bin += "0001"
-        break
-      case "2":
-        bin += "0010"
-        break
-      case "3":
-        bin += "0011"
-        break
-      case "4":
-        bin += "0100"
-        break
-      case "5":
-        bin += "0101"
-        break
-      case "6":
-        bin += "0110"
-        break
-      case "7":
-        bin += "0111"
-        break
-      case "8":
-        bin += "1000"
-        break
-      case "9":
-        bin += "1001"
-        break
-      case "a":
-        bin += "1010"
-        break
-      case "b":
-        bin += "1011"
-        break
-      case "c":
-        bin += "1100"
-        break
-      case "d":
-        bin += "1101"
-        break
-      case "e":
-        bin += "1110"
-        break
-      case "f":
-        bin += "1111"
-        break
-      default:
-        return ""
-    }
-  }
-
-  return bin
-}

@@ -1,7 +1,6 @@
 // "SPDX-License-Identifier: Apache-2.0"
 pragma solidity ^0.7.0;
 
-import "hardhat/console.sol";
 import "./Bits.sol";
 
 contract Bitfield {
@@ -23,15 +22,12 @@ contract Bitfield {
         }
         bitfield = new uint256[](words);
 
-        /**
-         * @todo This is just a dummy random number generation process until the final implementation is known
-         */
         for (uint i = 0; found < n; i++) {
             bytes32 randomness = keccak256(abi.encode(seed + i));
             uint256 index = uint256(randomness) % length;
 
             if (isSet(bitfield, index)) {
-                // bit already set, try with next seed
+                // bit already set, try again
                 continue;
             }
 
