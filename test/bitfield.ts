@@ -19,7 +19,7 @@ describe.only("Bitfield contract", function () {
     })
   })
 
-  describe("countSetBits", function () {
+  describe("countSetBitsNaive", function () {
     it("should work", async function () {
       const data = [
         "107407916326275966301416378095022386746999676775490005593752458613659389917687",
@@ -27,8 +27,81 @@ describe.only("Bitfield contract", function () {
         "9687566318488655556051684796669440507284418336359471895292002641619912980943",
         "3336869326598304521714326002746641428383893517220838406340128998778157",
       ]
+      const gas = await bitfield.estimateGas.countSetBits(data)
+      console.log({ gas: gas.toString() })
       const result = await bitfield.countSetBits(data)
       expect(result).to.equal(667)
+    })
+  })
+
+  describe("countSetShift", function () {
+    it("should work", async function () {
+      const data = [
+        "107407916326275966301416378095022386746999676775490005593752458613659389917687",
+        "56987781681525869283429827462903514011401242466396942482516802756059453173596",
+        "9687566318488655556051684796669440507284418336359471895292002641619912980943",
+        "3336869326598304521714326002746641428383893517220838406340128998778157",
+      ]
+      const gas = await bitfield.estimateGas.countSetShift(data)
+      console.log({ gas: gas.toString() })
+      const result = await bitfield.countSetShift(data)
+      expect(result).to.equal(667)
+    })
+  })
+
+  describe("countSetBitsKernighan", function () {
+    it("should work", async function () {
+      const data = [
+        "107407916326275966301416378095022386746999676775490005593752458613659389917687",
+        "56987781681525869283429827462903514011401242466396942482516802756059453173596",
+        "9687566318488655556051684796669440507284418336359471895292002641619912980943",
+        "3336869326598304521714326002746641428383893517220838406340128998778157",
+      ]
+      const gas = await bitfield.estimateGas.countSetBitsKernighan(data)
+      console.log({ gas: gas.toString() })
+      const result = await bitfield.countSetBitsKernighan(data)
+      expect(result).to.equal(667)
+    })
+  })
+
+  describe("countSetBitsHammingWeight", function () {
+    it("should work", async function () {
+      const data = [
+        "107407916326275966301416378095022386746999676775490005593752458613659389917687",
+        "56987781681525869283429827462903514011401242466396942482516802756059453173596",
+        "9687566318488655556051684796669440507284418336359471895292002641619912980943",
+        "3336869326598304521714326002746641428383893517220838406340128998778157",
+      ]
+      const gas = await bitfield.estimateGas.countSetBitsHammingWeight(data)
+      console.log({ gas: gas.toString() })
+      const result = await bitfield.countSetBitsHammingWeight(data)
+      expect(result).to.equal(667)
+    })
+
+    describe.only("cases", async function () {
+      const cases = [
+        { in: [BigNumber.from(0)], out: 0 },
+        { in: [BigNumber.from(1)], out: 1 },
+        { in: [BigNumber.from(2)], out: 1 },
+        { in: [BigNumber.from(3)], out: 2 },
+        { in: [BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")], out: 256 },
+        { in: [BigNumber.from(3), BigNumber.from(3), BigNumber.from(3), BigNumber.from(3)], out: 8 },
+      ]
+
+      for (let i = 0; i < cases.length; i++) {
+        const c = cases[i]
+        const bin = bigNumberArrayToBin(c.in)
+
+        it(`case ${i}: in ${c.in}, out ${c.out}`, async function () {
+          console.log({ in: c.in, bin, out: c.out })
+
+          const gas = await bitfield.estimateGas.countSetBitsHammingWeight(c.in)
+          console.log({ gas: gas.toNumber() })
+
+          const result = await bitfield.countSetBitsHammingWeight(c.in)
+          expect(result).to.equal(c.out)
+        })
+      }
     })
   })
 
