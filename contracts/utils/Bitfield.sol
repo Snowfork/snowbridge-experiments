@@ -39,6 +39,10 @@ contract Bitfield {
         return bitfield;
     }
 
+    /**
+     * Counts the number of set bits in the `prior`, then draws a random number lower than that count, finds the
+     * corresponding index, and sets it to true. Repeats that `n` times.
+     */
     function randomNBitsFromPriorCounting(uint256 seed, uint256[] memory prior, uint n)
         public
         pure
@@ -66,6 +70,10 @@ contract Bitfield {
         return bitfield;
     }
 
+    /**
+     * Draws a random number, derives an index in the bitfield, and sets the bit if it is in the `prior` and not yet
+     * set. Repeats that `n` times.
+     */
     function randomNBitsFromPriorRejectionSampling(uint256 seed, uint256[] memory prior, uint n)
         public
         pure
