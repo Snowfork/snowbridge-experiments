@@ -1,9 +1,10 @@
 import { expect } from "chai"
+import { BigNumber } from "ethers"
 import { ethers } from "hardhat"
 import { Bitfield } from "../types"
 import { bigNumberArrayToBin } from "./utils/binary"
 
-describe("Bitfield contract", function () {
+describe.only("Bitfield contract", function () {
   let bitfield: Bitfield
 
   beforeEach(async function () {
@@ -18,7 +19,79 @@ describe("Bitfield contract", function () {
     })
   })
 
+  describe("countSetBits", function () {
+    it("should work", async function () {
+      const data = [
+        "107407916326275966301416378095022386746999676775490005593752458613659389917687",
+        "56987781681525869283429827462903514011401242466396942482516802756059453173596",
+        "9687566318488655556051684796669440507284418336359471895292002641619912980943",
+        "3336869326598304521714326002746641428383893517220838406340128998778157",
+      ]
+      const result = await bitfield.countSetBits(data)
+      expect(result).to.equal(667)
+    })
+  })
+
+  describe("indexOfNthSetBit", function () {
+    describe("cases", async function () {
+      const cases = [
+        { field: [BigNumber.from("2")], n: 1, index: 1 },
+        { field: [BigNumber.from("10")], n: 2, index: 3 },
+        { field: [BigNumber.from("1"), BigNumber.from("0")], n: 1, index: 0 },
+        { field: [BigNumber.from("0"), BigNumber.from("1")], n: 1, index: 256 },
+        {
+          field: [BigNumber.from("0"), BigNumber.from("0"), BigNumber.from("0"), BigNumber.from("1")],
+          n: 1,
+          index: 768,
+        },
+        {
+          field: [
+            BigNumber.from("107407916326275966301416378095022386746999676775490005593752458613659389917687"),
+            BigNumber.from("56987781681525869283429827462903514011401242466396942482516802756059453173596"),
+            BigNumber.from("9687566318488655556051684796669440507284418336359471895292002641619912980943"),
+            BigNumber.from("3336869326598304521714326002746641428383893517220838406340128998778157"),
+          ],
+          n: 10,
+          index: 12,
+        },
+      ]
+
+      for (let i = 0; i < cases.length; i++) {
+        const c = cases[i]
+        const bin = bigNumberArrayToBin(c.field)
+        const field = c.field.map(f => f.toString())
+        const n = c.n
+        const index = c.index
+
+        it(`case ${i}: n ${n}, index ${index}`, async function () {
+          console.log({ field, bin, n, index })
+
+          const result = await bitfield.indexOfNthSetBit(c.field, c.n)
+          expect(result).to.equal(c.index)
+        })
+      }
+    })
+  })
+
   describe("randomNBits function", function () {
+    it("should work for our expected numbers", async function () {
+      const seed = "0xcafebabeb"
+      const length = 1000
+      const n = 667
+
+      const gas = await bitfield.estimateGas.randomNBits(seed, length, n)
+
+      const result = await bitfield.randomNBits(seed, length, n)
+
+      const bin = bigNumberArrayToBin(result as any)
+      const sliced = bin.slice(bin.length - length)
+
+      console.log({ gas: gas.toString(), result: sliced })
+
+      expect(sliced.length).to.equal(length)
+      expect(sliced.split("1").length - 1).to.equal(n)
+    })
+
     it("should work for different seeds, lengths and bits to be set", async function () {
       const cases = [
         { seed: "0x00", length: 0, n: 0, result: "" },
@@ -70,12 +143,59 @@ describe("Bitfield contract", function () {
 
       for (let c of cases) {
         const result = await bitfield.randomNBits(c.seed, c.length, c.n)
+
         const bin = bigNumberArrayToBin(result as any)
         const sliced = bin.slice(bin.length - c.length)
         expect(sliced).to.equal(c.result)
         expect(sliced.length).to.equal(c.length)
         expect(sliced.split("1").length - 1).to.equal(c.n)
       }
+    })
+  })
+
+  describe("randomNBitsFromPriorRejectionSampling function", function () {
+    it("should work for our expected numbers", async function () {
+      const prior = [
+        "107407916326275966301416378095022386746999676775490005593752458613659389917687",
+        "56987781681525869283429827462903514011401242466396942482516802756059453173596",
+        "9687566318488655556051684796669440507284418336359471895292002641619912980943",
+        "3336869326598304521714326002746641428383893517220838406340128998778157",
+      ]
+
+      const seed = "0xcafebabe"
+      const n = 22
+
+      const gas = await bitfield.estimateGas.randomNBitsFromPriorRejectionSampling(seed, prior, n)
+      const result = await bitfield.randomNBitsFromPriorRejectionSampling(seed, prior, n)
+
+      const bin = bigNumberArrayToBin(result as any)
+      console.log({ gas: gas.toString(), result: bin })
+
+      expect(bin.length).to.equal(1024)
+      expect(bin.split("1").length - 1).to.equal(n)
+    })
+  })
+
+  describe("randomNBitsFromPriorCounting function", function () {
+    it("should work for our expected numbers", async function () {
+      const prior = [
+        "107407916326275966301416378095022386746999676775490005593752458613659389917687",
+        "56987781681525869283429827462903514011401242466396942482516802756059453173596",
+        "9687566318488655556051684796669440507284418336359471895292002641619912980943",
+        "3336869326598304521714326002746641428383893517220838406340128998778157",
+      ]
+
+      const seed = "0xcafebabe"
+      const n = 22
+
+      const gas = await bitfield.estimateGas.randomNBitsFromPriorCounting(seed, prior, n)
+      const result = await bitfield.randomNBitsFromPriorCounting(seed, prior, n)
+
+      const bin = bigNumberArrayToBin(result as any)
+      console.log({ gas: gas.toString(), result: bin })
+
+      expect(bin.length).to.equal(1024)
+      expect(bin.split("1").length - 1).to.equal(n)
     })
   })
 })
