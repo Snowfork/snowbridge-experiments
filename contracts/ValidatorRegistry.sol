@@ -52,6 +52,9 @@ contract ValidatorRegistry is Ownable, MerkleTree {
         return true;
     }
 
+    //update(newRoot)
+    //MerkleTree.setNewRoot(newRoot)
+
     /**
      * @notice Checks if a validators address is a member of the merkle tree
      * @param validatorAddress The address of the validator to check

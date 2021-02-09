@@ -6,8 +6,8 @@ import type { ValidatorRegistry } from "types"
 import { hex2buf } from "../src/utils/utils"
 
 async function testFixture() {
-  const { merkleTree, verifierAddresses } = await getMerkleTestData()
-  const merkleRoot = merkleTree.getHexRoot()
+  const { beefyValidatorAddresses, beefyMerkleTree } = await getMerkleTestData()
+  const merkleRoot = beefyMerkleTree.getHexRoot()
 
   const validatorRegistryFactory = await ethers.getContractFactory("ValidatorRegistry")
   const validatorRegistryContract = (await validatorRegistryFactory.deploy(merkleRoot)) as ValidatorRegistry
@@ -15,8 +15,8 @@ async function testFixture() {
 
   return {
     validatorRegistryContract,
-    merkleTree,
-    verifierAddresses,
+    beefyMerkleTree,
+    beefyValidatorAddresses,
   }
 }
 
@@ -29,41 +29,42 @@ describe("ValidatorRegistry Contract", function () {
     })
 
     it("Should set the root correctly", async function () {
-      const { validatorRegistryContract, merkleTree } = await testFixture()
+      const { validatorRegistryContract, beefyMerkleTree } = await testFixture()
 
-      expect(await validatorRegistryContract.root()).to.equal(merkleTree.getHexRoot())
+      expect(await validatorRegistryContract.root()).to.equal(beefyMerkleTree.getHexRoot())
     })
   })
 
   context("checkValidatorInSet function", function () {
     it("Should correctly verify with valid proofs", async function () {
-      const { validatorRegistryContract, merkleTree, verifierAddresses } = await testFixture()
+      const { validatorRegistryContract, beefyMerkleTree, beefyValidatorAddresses } = await testFixture()
 
-      const leaf = merkleTree.getLeaves()[0]
-      const proof = merkleTree.getProof(leaf)
+      const leaf = beefyMerkleTree.getLeaves()[0]
+      const proof = beefyMerkleTree.getProof(leaf)
       const root = hex2buf(await validatorRegistryContract.root())
 
-      expect(merkleTree.verify(proof, leaf, root)).to.be.true
+      expect(beefyMerkleTree.verify(proof, leaf, root)).to.be.true
 
-      const hexProof = merkleTree.getHexProof(leaf)
-      const senderAddress = verifierAddresses[0]
+      const hexProof = beefyMerkleTree.getHexProof(leaf)
+      const senderAddress = beefyValidatorAddresses[0]
       const result = await validatorRegistryContract.checkValidatorInSet(senderAddress, hexProof)
 
       expect(result).to.be.true
     })
 
     it("Should not verify an invalid proof", async function () {
-      const { validatorRegistryContract, merkleTree, verifierAddresses } = await testFixture()
+      const { validatorRegistryContract, beefyMerkleTree, beefyValidatorAddresses } = await testFixture()
 
-      const leaf = merkleTree.getLeaves()[1]
-      const proof = merkleTree.getProof(leaf)
+      const leaf0 = beefyMerkleTree.getLeaves()[0]
+      const leaf1 = beefyMerkleTree.getLeaves()[1]
+      const proof1 = beefyMerkleTree.getProof(leaf1)
       const root = hex2buf(await validatorRegistryContract.root())
 
-      expect(merkleTree.verify(proof, leaf, root)).to.be.false
+      expect(beefyMerkleTree.verify(proof1, leaf0, root)).to.be.false
 
-      const hexProof = merkleTree.getHexProof(leaf)
-      const badSenderAddress = verifierAddresses[1]
-      const result = await validatorRegistryContract.checkValidatorInSet(badSenderAddress, hexProof)
+      const hexProof1 = beefyMerkleTree.getHexProof(leaf1)
+      const badSenderAddress0 = beefyValidatorAddresses[0]
+      const result = await validatorRegistryContract.checkValidatorInSet(badSenderAddress0, hexProof1)
 
       expect(result).to.be.false
     })
