@@ -6,35 +6,35 @@ import { LightClientBridge, ValidatorRegistry } from "../types"
 const NUMBER_OF_SIGNERS = 5
 
 const testCommitment1 = {
-  "commitment": {
-    "payload": "0x47fb590e34f51fd6156e2e1f6049a05bedc9dc8bc9550c5cde38a3afb61ae3c3",
-    "block_number": 6,
-    "validator_set_id": 0
-  }, "signatures": [
+  commitment: {
+    payload: "0x47fb590e34f51fd6156e2e1f6049a05bedc9dc8bc9550c5cde38a3afb61ae3c3",
+    block_number: 6,
+    validator_set_id: 0,
+  },
+  signatures: [
     "0xe22c329e80d16ab6f58560e96e171837c98304355bcc4161adb78f57fbbd99851cabff9873a6f5c7db3651e188ccf7e3b544610055b92877d78ac1ac4468c247",
-    "0x01c8e8d11a3e0196695b4fe8cefd16d24697d941c708c1fea02d04523f0604c9a778344ea13b02a0fcb1c8e489fdaa0f300149c905413b9b188e4faa33fe61fc"
-  ]
-};
+    "0x01c8e8d11a3e0196695b4fe8cefd16d24697d941c708c1fea02d04523f0604c9a778344ea13b02a0fcb1c8e489fdaa0f300149c905413b9b188e4faa33fe61fc",
+  ],
+}
 
 const testCommitment2 = {
-  "commitment": {
-    "payload": "0x4a6516c2f427383bbe90f367f875f360b8c0986e2a01b2b29451904576dddcb7",
-    "block_number": 8,
-    "validator_set_id": 0
-  }, "signatures": [
+  commitment: {
+    payload: "0x4a6516c2f427383bbe90f367f875f360b8c0986e2a01b2b29451904576dddcb7",
+    block_number: 8,
+    validator_set_id: 0,
+  },
+  signatures: [
     "0xaa97c821f95a83edd4c9cefb7e03dc5dae00a977d51ee49f29a8f8c0efa0e187582833e6814b5508fe04272826a6b9a95b11d64901260ee8fa218b7e194b48a0",
-    "0x01f44abd89dadbd4245ea1495114f8908ef48f4d77be5bc5e4bcdf81a670ebf2ca56c151dc89e4e65cc274625a9adb99fab3785f975933d4c25303fa05488ec8"
-  ]
-};
+    "0x01f44abd89dadbd4245ea1495114f8908ef48f4d77be5bc5e4bcdf81a670ebf2ca56c151dc89e4e65cc274625a9adb99fab3785f975933d4c25303fa05488ec8",
+  ],
+}
 
 async function testFixture() {
   const { beefyValidatorAddresses, beefyMerkleTree } = await getMerkleTestData()
   const merkleRoot = beefyMerkleTree.getHexRoot()
 
   const validatorRegistryFactory = await ethers.getContractFactory("ValidatorRegistry")
-  const validatorRegistryContract = (await validatorRegistryFactory.deploy(
-    merkleRoot
-  )) as ValidatorRegistry
+  const validatorRegistryContract = (await validatorRegistryFactory.deploy(merkleRoot)) as ValidatorRegistry
   await validatorRegistryContract.deployed()
 
   const lightClientBridgeFactory = await ethers.getContractFactory("LightClientBridge")
@@ -51,8 +51,12 @@ async function testFixture() {
   }
 }
 
-describe.only("LightClientBridge Contract", function () {
-  describe.skip("constructor", function () {
+/**
+ * Note: We can use Waffle's chai matchers here without explicitly
+ * stating `chai.use(solidity)`
+ */
+describe("LightClientBridge Contract", function () {
+  describe("constructor", function () {
     it("Should deploy the contract successfully", async function () {
       const { lightClientBridgeContract } = await testFixture()
 
@@ -74,17 +78,22 @@ describe.only("LightClientBridge Contract", function () {
 
   describe("newSignatureCommitment function", function () {
     it("Should not revert when submitting a valid newSignatureCommitment", async function () {
-      const { lightClientBridgeContract, validatorRegistryContract, beefyValidatorAddresses, beefyMerkleTree } = await testFixture()
+      const {
+        lightClientBridgeContract,
+        validatorRegistryContract,
+        beefyValidatorAddresses,
+        beefyMerkleTree,
+      } = await testFixture()
       const [signer] = await ethers.getSigners()
 
       const validatorClaimsBitfield = 123
 
       const leaf0 = beefyMerkleTree.getLeaves()[0]
-      const validatorPublicKeyMerkleProof0 = beefyMerkleTree.getHexProof(leaf0);
+      const validatorPublicKeyMerkleProof0 = beefyMerkleTree.getHexProof(leaf0)
 
-      expect(await validatorRegistryContract
-        .checkValidatorInSet(beefyValidatorAddresses[0], validatorPublicKeyMerkleProof0))
-        .to.be.true
+      expect(
+        await validatorRegistryContract.checkValidatorInSet(beefyValidatorAddresses[0], validatorPublicKeyMerkleProof0)
+      ).to.be.true
 
       const result = await lightClientBridgeContract.newSignatureCommitment(
         testCommitment2.commitment.payload,
@@ -109,7 +118,12 @@ describe.only("LightClientBridge Contract", function () {
 
   describe("completeSignatureCommitment function", function () {
     xit("Should not revert when calling completeSignatureCommitment after newSignatureCommitment", async function () {
-      const { lightClientBridgeContract, validatorRegistryContract, beefyValidatorAddresses, beefyMerkleTree } = await testFixture()
+      const {
+        lightClientBridgeContract,
+        validatorRegistryContract,
+        beefyValidatorAddresses,
+        beefyMerkleTree,
+      } = await testFixture()
       const [signer] = await ethers.getSigners()
 
       const payload = ethers.utils.solidityKeccak256(["string"], ["test"])
@@ -119,9 +133,8 @@ describe.only("LightClientBridge Contract", function () {
       const leaf = beefyMerkleTree.getLeaves()[0]
       const validatorPublicKeyMerkleProof = beefyMerkleTree.getHexProof(leaf)
 
-      expect(await validatorRegistryContract
-        .checkValidatorInSet(signer.address, validatorPublicKeyMerkleProof))
-        .to.be.true
+      expect(await validatorRegistryContract.checkValidatorInSet(signer.address, validatorPublicKeyMerkleProof)).to.be
+        .true
 
       const newSigResult = await lightClientBridgeContract.newSignatureCommitment(
         testCommitment2.commitment.payload,
