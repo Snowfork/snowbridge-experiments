@@ -24,7 +24,7 @@ describe("Verification contract", function() {
 
      // This occurs off-chain in the test
 
-     // 1. should_verify (test): https://github.com/paritytech/substrate/blob/td-mmr/frame/merkle-mountain-range/src/tests.rs#L229
+     // 1. should_verify (test): https://github.com/paritytech/substrate/commit/661bbc9a73107d144aaea80e4ed0e4b54a5b2a96#diff-bc8055a7324f264fb179940831634d3ea1812eef10b01728aecd9854f6e881f8R229
      // Takes self, leaf, and Hash
 
     // Generate MerkleProof using MMR size, proof items (hash/collect?)
