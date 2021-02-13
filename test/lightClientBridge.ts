@@ -1,30 +1,25 @@
 import { expect } from "chai"
+import web3 from "web3"
 import { ethers, waffle, artifacts } from "hardhat"
 import getMerkleTestData from "./data/merkleTestData"
 import { LightClientBridge, ValidatorRegistry } from "../types"
 
 const NUMBER_OF_SIGNERS = 5
 
-const testCommitment1 = {
-  "commitment": {
-    "payload": "0x47fb590e34f51fd6156e2e1f6049a05bedc9dc8bc9550c5cde38a3afb61ae3c3",
-    "block_number": 6,
-    "validator_set_id": 0
-  }, "signatures": [
-    "0xe22c329e80d16ab6f58560e96e171837c98304355bcc4161adb78f57fbbd99851cabff9873a6f5c7db3651e188ccf7e3b544610055b92877d78ac1ac4468c247",
-    "0x01c8e8d11a3e0196695b4fe8cefd16d24697d941c708c1fea02d04523f0604c9a778344ea13b02a0fcb1c8e489fdaa0f300149c905413b9b188e4faa33fe61fc"
-  ]
-};
-
-const testCommitment2 = {
-  "commitment": {
-    "payload": "0x4a6516c2f427383bbe90f367f875f360b8c0986e2a01b2b29451904576dddcb7",
-    "block_number": 8,
-    "validator_set_id": 0
-  }, "signatures": [
-    "0xaa97c821f95a83edd4c9cefb7e03dc5dae00a977d51ee49f29a8f8c0efa0e187582833e6814b5508fe04272826a6b9a95b11d64901260ee8fa218b7e194b48a0",
-    "0x01f44abd89dadbd4245ea1495114f8908ef48f4d77be5bc5e4bcdf81a670ebf2ca56c151dc89e4e65cc274625a9adb99fab3785f975933d4c25303fa05488ec8"
-  ]
+const testCommitment = {
+  signedCommitmentJSON: {
+    commitment: {
+      payload: '0x458eb462b21eb8b1f96d862c7429d08becff753dfe7bf15e53b7b12a3c7f00e8',
+      block_number: 12,
+      validator_set_id: 0
+    },
+    signatures: [
+      '0xd093ae4d324b6ed492f6aee0a6260729ce438abff56099f1c183d59455dfaa8b4280d74431470c3b32b1cfe628d9d38f130726d8f48092ec74c7b7904ce453a001',
+      '0x4548a01d7fb40f0ee0f21a064572f74dabc983598b1c84f58b6a389eecc1a4c25eae0edb44caa53da51a6c45a53e7fe8b9eb235a20997f3c7c8654656bacff6a00'
+    ]
+  },
+  commitmentBytes: '0x458eb462b21eb8b1f96d862c7429d08becff753dfe7bf15e53b7b12a3c7f00e80c0000000000000000000000',
+  hashedCommitment: '0x6e6fece26779b98e5aa5a1acfc3d5b9bf54daed2a6fb6955585e4a993090c3a7'
 };
 
 async function testFixture() {
@@ -80,22 +75,50 @@ describe.only("LightClientBridge Contract", function () {
       const validatorClaimsBitfield = 123
 
       const leaf0 = beefyMerkleTree.getLeaves()[0]
-      const validatorPublicKeyMerkleProof0 = beefyMerkleTree.getHexProof(leaf0);
+      // const validatorPublicKeyMerkleProof0 = beefyMerkleTree.getHexProof(leaf0);
 
-      expect(await validatorRegistryContract
-        .checkValidatorInSet(beefyValidatorAddresses[0], validatorPublicKeyMerkleProof0))
-        .to.be.true
+      // expect(await validatorRegistryContract
+      //   .checkValidatorInSet(beefyValidatorAddresses[0], validatorPublicKeyMerkleProof0))
+      //   .to.be.true
+      const recIdIncrement = 27;
+      const sig0 = testCommitment.signedCommitmentJSON.signatures[0];
+      const recoveryId0 = web3.utils.hexToNumber(`0x${sig0.slice(130)}`);
+      console.log({ recoveryId0 });
+      const newRecoveryId0 = web3.utils.numberToHex(recoveryId0 + recIdIncrement)
+      console.log({ newRecoveryId0 })
+      const sig0modified = sig0
+        .slice(0, 130)
+        .concat(newRecoveryId0.slice(2));
+      const sig1 = testCommitment.signedCommitmentJSON.signatures[1];
 
-      const result = await lightClientBridgeContract.newSignatureCommitment(
-        testCommitment2.commitment.payload,
-        validatorClaimsBitfield,
-        testCommitment2.signatures[0],
-        beefyValidatorAddresses[0] as any,
-        validatorPublicKeyMerkleProof0
-      )
-      expect(result).to.not.be.reverted
+      const recoveryId1 = web3.utils.hexToNumber(`0x${sig1.slice(130)}`);
+      console.log({ recoveryId1 });
+      const newRecoveryId1 = web3.utils.numberToHex(recoveryId1 + recIdIncrement)
+      console.log({ newRecoveryId1 })
 
-      expect(await lightClientBridgeContract.currentId()).to.equal(1)
+      const sig1modified = sig1
+        .slice(0, 130)
+        .concat(newRecoveryId1.slice(2));
+
+      const result0 = await lightClientBridgeContract.testSig(
+        testCommitment.hashedCommitment,
+        sig0modified
+      );
+      const result1 = await lightClientBridgeContract.testSig(
+        testCommitment.hashedCommitment,
+        sig1modified
+      );
+
+      // const result = await lightClientBridgeContract.newSignatureCommitment(
+      //   testCommitment.hashedCommitment,
+      //   validatorClaimsBitfield,
+      //   sig0,
+      //   beefyValidatorAddresses[0] as any,
+      //   validatorPublicKeyMerkleProof0
+      // )
+      // expect(result).to.not.be.reverted
+
+      // expect(await lightClientBridgeContract.currentId()).to.equal(1)
 
       // TODO add assertion for the stake being locked up (whose stake? signer? or relayer?)
       // TODO add assertion for the event being emitted
@@ -113,7 +136,6 @@ describe.only("LightClientBridge Contract", function () {
       const [signer] = await ethers.getSigners()
 
       const payload = ethers.utils.solidityKeccak256(["string"], ["test"])
-      const payloadForSigning: Uint8Array = ethers.utils.arrayify(payload)
       const validatorClaimsBitfield = 123
 
       const leaf = beefyMerkleTree.getLeaves()[0]
@@ -124,9 +146,9 @@ describe.only("LightClientBridge Contract", function () {
         .to.be.true
 
       const newSigResult = await lightClientBridgeContract.newSignatureCommitment(
-        testCommitment2.commitment.payload,
+        testCommitment.hashedCommitment,
         validatorClaimsBitfield,
-        testCommitment2.signatures[0],
+        testCommitment.signedCommitmentJSON.signatures[0],
         beefyValidatorAddresses[0] as any,
         validatorPublicKeyMerkleProof as any
       )
@@ -146,8 +168,8 @@ describe.only("LightClientBridge Contract", function () {
 
       const completionResult = await lightClientBridgeContract.completeSignatureCommitment(
         id,
-        testCommitment2.commitment.payload,
-        testCommitment2.signatures as any,
+        testCommitment.hashedCommitment,
+        testCommitment.signedCommitmentJSON.signatures as any,
         randomSignatureBitfieldPositions as any,
         beefyValidatorAddresses as any,
         randomPublicKeyMerkleProofs as any

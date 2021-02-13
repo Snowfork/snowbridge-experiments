@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "./utils/Bits.sol";
 import "./ValidatorRegistry.sol";
+import "hardhat/console.sol";
 
 /**
  * @title A entry contract for the Ethereum light client
@@ -70,6 +71,25 @@ contract LightClientBridge {
     }
 
     /* Public Functions */
+    function testSig(bytes32 payload, bytes memory signature) public view {
+        address qq = ECDSA.recover(payload, signature);
+        console.log(qq);
+        // console.log(keccak256(abi.encodePacked(qq)));
+    }
+
+    event LogA(address a);
+
+    function testSigRaw(
+        bytes32 hash,
+        bytes32 r,
+        bytes32 s
+    ) public {
+        console.log(ecrecover(hash, 0, s, r));
+        console.log(ecrecover(hash, 1, s, r));
+        console.log(ecrecover(hash, 27, s, r));
+        console.log(ecrecover(hash, 28, s, r));
+        emit LogA(ecrecover(hash, 28, s, r));
+    }
 
     /**
      * @notice Executed by the prover in order to begin the process of block
@@ -97,6 +117,8 @@ contract LightClientBridge {
         );
 
         // TODO also add a check here that the signing validator is in validatorClaimsBitfield
+
+        console.log(ECDSA.recover(payload, validatorSignatureCommitment));
 
         /**
          * @dev Check if validatorSignatureCommitment is correct, ie. check if it matches
@@ -239,6 +261,7 @@ contract LightClientBridge {
         //update latestMMRRoot = payload.mmrRoot;
 
         // if payload is in next epoch, then apply validatorset changes
+        // if payload is not in current or next epoch, reject
 
         applyValidatorSetChanges(payload);
     }

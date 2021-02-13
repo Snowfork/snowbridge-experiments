@@ -26,8 +26,8 @@ const testFilePath = path.join(__dirname, testFileName)
 const readTestData = (): Promise<TestFile> => fs.readJSON(testFilePath) as Promise<TestFile>
 
 const beefyValidatorAddresses = [
-  "0xd5E04779689068c916B04cB365ec3153755684d9",
-  "0x4F13F0CCd982cB755A661969143c37CBc49Ef5B9"
+  "0x04f60ddb75f85d93a92648b4acbc8ebc5354b3c2f56e1925af876c00ce286197",
+  "0xac5c0df31a2e62d18259b755ec1ac54ad715811f2d717fbed1b20bc797cad88a"
 ];
 
 export default async (): Promise<MerkleTestData> => {
