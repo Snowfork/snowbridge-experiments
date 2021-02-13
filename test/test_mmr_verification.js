@@ -318,6 +318,21 @@ contract('MMRVerification', async () => {
         await mmrVerification.verifyInclusionProof.call(root, leafNodeHash, proof.leaf_index, proof.leaf_count, proof.items).should.eventually.equal(true);;
       });
 
+      it('should NOT verify an invalid proof missing a left root proof item for leaf index 13 (node 24)', async () => {
+        let leafNodeHash = "0x883f1aca23002690575957cc85663774bbd3b9549ba5f0ee0fcc8aed9c88cf99"
+        let proof = {
+          leaf_index: 13,
+          leaf_count: 15,
+          items: [
+            "0x16c5d5eb80eec816ca1804cd15705ac2418325b51b57a272e5e7f119e197c31f",
+            "0x94014b81bc56d64cac8dcde8eee47da0ed9b1319dccd9e86ad8d2266d8ef060a",
+            "0x0a73e5a8443de3fcb6f918d786ad6dece6733ec936aa6b1b79beaab19e269d68"
+          ]
+        }
+
+        await mmrVerification.verifyInclusionProof.call(root, leafNodeHash, proof.leaf_index, proof.leaf_count, proof.items).should.eventually.equal(false);;
+      });
+
       it('should verify valid proof for leaf index 14 (node 26)', async () => {
         let leafNodeHash = "0x0a73e5a8443de3fcb6f918d786ad6dece6733ec936aa6b1b79beaab19e269d68"
         let proof = {
