@@ -178,9 +178,7 @@ describe.only("LightClientBridge Contract", function () {
 
       expect(result).to.not.be.reverted
 
-      const id = await lightClientBridgeContract.currentId()
-
-      expect(id).to.equal(1)
+      expect(await lightClientBridgeContract.currentId()).to.equal(1)
 
       //TODO Generate randomSignatureBitfieldPositions properly
       const randomSignatureBitfieldPositions: string[] = []
@@ -191,14 +189,16 @@ describe.only("LightClientBridge Contract", function () {
       const randomPublicKeyMerkleProofs: string[] = []
       const randomSignatureCommitments: string[] = testCommitment.signedCommitmentJSON.signatures
 
+      const validationDataID = 0;
       const completionResult = await lightClientBridgeContract.completeSignatureCommitment(
-        id,
+        validationDataID,
         testCommitment.hashedCommitment,
         randomSignatureCommitments as any,
         randomSignatureBitfieldPositions as any,
         randomValidatorAddresses as any,
         randomPublicKeyMerkleProofs as any
       )
+      expect(completionResult).to.not.be.reverted
 
       // TODO add assertion for the stake being refunded
 

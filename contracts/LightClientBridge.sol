@@ -142,7 +142,7 @@ contract LightClientBridge {
         // TODO verify that sender is the same as in `newSignatureCommitment`
         require(msg.sender == data.senderAddress, "Error: Sender address does not match original validation data");
 
-        // TODO calculate number of required validator signatures
+        // TODO calculate number of required validator signatures properly, eg:
         //  uint8 numberOfValidators = validatorRegistry.numberOfValidators;
         //  requiredNumberOfSamples = numberOfValidators * 2/3
         uint8 requiredNumberOfSamples = 5;
