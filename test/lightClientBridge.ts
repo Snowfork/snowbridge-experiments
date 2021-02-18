@@ -4,22 +4,20 @@ import { ethers, waffle, artifacts } from "hardhat"
 import getMerkleTestData from "./data/merkleTestData"
 import { LightClientBridge, ValidatorRegistry } from "../types"
 
-const NUMBER_OF_SIGNERS = 5
-
 const testCommitment = {
   signedCommitmentJSON: {
     commitment: {
-      payload: '0x458eb462b21eb8b1f96d862c7429d08becff753dfe7bf15e53b7b12a3c7f00e8',
-      block_number: 12,
+      payload: '0x79fa868a511f46c319fefc97c8dac00256c04ca066672905dd74bcd0b7cf8d15',
+      block_number: 212,
       validator_set_id: 0
     },
     signatures: [
-      '0xd093ae4d324b6ed492f6aee0a6260729ce438abff56099f1c183d59455dfaa8b4280d74431470c3b32b1cfe628d9d38f130726d8f48092ec74c7b7904ce453a001',
-      '0x4548a01d7fb40f0ee0f21a064572f74dabc983598b1c84f58b6a389eecc1a4c25eae0edb44caa53da51a6c45a53e7fe8b9eb235a20997f3c7c8654656bacff6a00'
+      '0x53e443dfc419233ae87b4b16f0acf068063973a7abfc709c3e4e4362d44daca8231e2bf581d3a601f11e75a223e61e763be5b52858033a0cb1dbbc68a86e78aa00',
+      '0xdbe2f8f441ca30227d2865b9c9c8ca715ddf814ffaa35f107889492b18884671723d083354af411931692ebd4b4e3f1e222378acdfd6cf8de0fa051f9102edad00'
     ]
   },
-  commitmentBytes: '0x458eb462b21eb8b1f96d862c7429d08becff753dfe7bf15e53b7b12a3c7f00e80c0000000000000000000000',
-  hashedCommitment: '0x6e6fece26779b98e5aa5a1acfc3d5b9bf54daed2a6fb6955585e4a993090c3a7'
+  commitmentBytes: '0x79fa868a511f46c319fefc97c8dac00256c04ca066672905dd74bcd0b7cf8d15d40000000000000000000000',
+  hashedCommitment: '0x4414e69fc0157450f099f217c44efdd9c8b45035849de68930ce50ea86072b57'
 };
 
 async function testFixture() {
@@ -47,7 +45,7 @@ async function testFixture() {
 }
 
 describe.only("LightClientBridge Contract", function () {
-  describe.skip("constructor", function () {
+  describe("constructor", function () {
     it("Should deploy the contract successfully", async function () {
       const { lightClientBridgeContract } = await testFixture()
 
@@ -68,60 +66,60 @@ describe.only("LightClientBridge Contract", function () {
   })
 
   describe("newSignatureCommitment function", function () {
+
     it("Should not revert when submitting a valid newSignatureCommitment", async function () {
       const { lightClientBridgeContract, validatorRegistryContract, beefyValidatorAddresses, beefyMerkleTree } = await testFixture()
-      const [signer] = await ethers.getSigners()
 
+      //TODO: Add bitfield stuff properly
       const validatorClaimsBitfield = 123
 
+      // Get validator leaves and proofs for each leaf
       const leaf0 = beefyMerkleTree.getLeaves()[0]
-      // const validatorPublicKeyMerkleProof0 = beefyMerkleTree.getHexProof(leaf0);
+      const validatorPublicKeyMerkleProof0 = beefyMerkleTree.getHexProof(leaf0);
+      const leaf1 = beefyMerkleTree.getLeaves()[1]
+      const validatorPublicKeyMerkleProof1 = beefyMerkleTree.getHexProof(leaf1);
 
-      // expect(await validatorRegistryContract
-      //   .checkValidatorInSet(beefyValidatorAddresses[0], validatorPublicKeyMerkleProof0))
-      //   .to.be.true
+      // Confirm validators are in fact part of validator set
+      expect(await validatorRegistryContract
+        .checkValidatorInSet(beefyValidatorAddresses[0], validatorPublicKeyMerkleProof0))
+        .to.be.true
+
+      expect(await validatorRegistryContract
+        .checkValidatorInSet(beefyValidatorAddresses[1], validatorPublicKeyMerkleProof1))
+        .to.be.true
+
+      // Update signature format (Polkadot uses recovery IDs 0 or 1, Eth uses 27 or 28, so we need to add 27)
       const recIdIncrement = 27;
-      const sig0 = testCommitment.signedCommitmentJSON.signatures[0];
+      let sig0 = testCommitment.signedCommitmentJSON.signatures[0];
       const recoveryId0 = web3.utils.hexToNumber(`0x${sig0.slice(130)}`);
-      console.log({ recoveryId0 });
       const newRecoveryId0 = web3.utils.numberToHex(recoveryId0 + recIdIncrement)
-      console.log({ newRecoveryId0 })
-      const sig0modified = sig0
+
+      let sig1 = testCommitment.signedCommitmentJSON.signatures[1];
+      const recoveryId1 = web3.utils.hexToNumber(`0x${sig1.slice(130)}`);
+      const newRecoveryId10 = web3.utils.numberToHex(recoveryId1 + recIdIncrement)
+
+      sig0 = sig0
         .slice(0, 130)
         .concat(newRecoveryId0.slice(2));
-      const sig1 = testCommitment.signedCommitmentJSON.signatures[1];
 
-      const recoveryId1 = web3.utils.hexToNumber(`0x${sig1.slice(130)}`);
-      console.log({ recoveryId1 });
-      const newRecoveryId1 = web3.utils.numberToHex(recoveryId1 + recIdIncrement)
-      console.log({ newRecoveryId1 })
-
-      const sig1modified = sig1
+      sig1 = sig1
         .slice(0, 130)
-        .concat(newRecoveryId1.slice(2));
+        .concat(newRecoveryId10.slice(2));
 
-      const result0 = await lightClientBridgeContract.testSig(
+      const result = lightClientBridgeContract.newSignatureCommitment(
         testCommitment.hashedCommitment,
-        sig0modified
-      );
-      const result1 = await lightClientBridgeContract.testSig(
-        testCommitment.hashedCommitment,
-        sig1modified
-      );
+        validatorClaimsBitfield,
+        sig0,
+        beefyValidatorAddresses[0] as any,
+        validatorPublicKeyMerkleProof0
+      )
 
-      // const result = await lightClientBridgeContract.newSignatureCommitment(
-      //   testCommitment.hashedCommitment,
-      //   validatorClaimsBitfield,
-      //   sig0,
-      //   beefyValidatorAddresses[0] as any,
-      //   validatorPublicKeyMerkleProof0
-      // )
-      // expect(result).to.not.be.reverted
+      expect(result).to.not.be.reverted
 
-      // expect(await lightClientBridgeContract.currentId()).to.equal(1)
+      expect(await lightClientBridgeContract.currentId()).to.equal(1)
 
       // TODO add assertion for the stake being locked up (whose stake? signer? or relayer?)
-      // TODO add assertion for the event being emitted
+      // TODO add assertion for any event being emitted
     })
 
     it("Should revert when validatorPublicKey is not in in validatorRegistry given validatorPublicKeyMerkleProof")
@@ -131,51 +129,78 @@ describe.only("LightClientBridge Contract", function () {
   })
 
   describe("completeSignatureCommitment function", function () {
-    xit("Should not revert when calling completeSignatureCommitment after newSignatureCommitment", async function () {
+    it("Should not revert when calling completeSignatureCommitment after newSignatureCommitment", async function () {
       const { lightClientBridgeContract, validatorRegistryContract, beefyValidatorAddresses, beefyMerkleTree } = await testFixture()
-      const [signer] = await ethers.getSigners()
 
-      const payload = ethers.utils.solidityKeccak256(["string"], ["test"])
+      //TODO: Add bitfield stuff properly
       const validatorClaimsBitfield = 123
 
-      const leaf = beefyMerkleTree.getLeaves()[0]
-      const validatorPublicKeyMerkleProof = beefyMerkleTree.getHexProof(leaf)
+      // Get validator leaves and proofs for each leaf
+      const leaf0 = beefyMerkleTree.getLeaves()[0]
+      const validatorPublicKeyMerkleProof0 = beefyMerkleTree.getHexProof(leaf0);
+      const leaf1 = beefyMerkleTree.getLeaves()[1]
+      const validatorPublicKeyMerkleProof1 = beefyMerkleTree.getHexProof(leaf1);
 
+      // Confirm validators are in fact part of validator set
       expect(await validatorRegistryContract
-        .checkValidatorInSet(signer.address, validatorPublicKeyMerkleProof))
+        .checkValidatorInSet(beefyValidatorAddresses[0], validatorPublicKeyMerkleProof0))
         .to.be.true
 
-      const newSigResult = await lightClientBridgeContract.newSignatureCommitment(
+      expect(await validatorRegistryContract
+        .checkValidatorInSet(beefyValidatorAddresses[1], validatorPublicKeyMerkleProof1))
+        .to.be.true
+
+      // Update signature format (Polkadot uses recovery IDs 0 or 1, Eth uses 27 or 28, so we need to add 27)
+      const recIdIncrement = 27;
+      let sig0 = testCommitment.signedCommitmentJSON.signatures[0];
+      const recoveryId0 = web3.utils.hexToNumber(`0x${sig0.slice(130)}`);
+      const newRecoveryId0 = web3.utils.numberToHex(recoveryId0 + recIdIncrement)
+
+      let sig1 = testCommitment.signedCommitmentJSON.signatures[1];
+      const recoveryId1 = web3.utils.hexToNumber(`0x${sig1.slice(130)}`);
+      const newRecoveryId10 = web3.utils.numberToHex(recoveryId1 + recIdIncrement)
+
+      sig0 = sig0
+        .slice(0, 130)
+        .concat(newRecoveryId0.slice(2));
+
+      sig1 = sig1
+        .slice(0, 130)
+        .concat(newRecoveryId10.slice(2));
+
+      const result = lightClientBridgeContract.newSignatureCommitment(
         testCommitment.hashedCommitment,
         validatorClaimsBitfield,
-        testCommitment.signedCommitmentJSON.signatures[0],
+        sig0,
         beefyValidatorAddresses[0] as any,
-        validatorPublicKeyMerkleProof as any
+        validatorPublicKeyMerkleProof0
       )
-      expect(newSigResult).to.not.be.reverted
 
-      const id = 1
-      const randomSignatureCommitments: string[] = []
+      expect(result).to.not.be.reverted
+
+      const id = await lightClientBridgeContract.currentId()
+
+      expect(id).to.equal(1)
+
+      //TODO Generate randomSignatureBitfieldPositions properly
       const randomSignatureBitfieldPositions: string[] = []
-      const randomSignerAddresses: string[] = []
+
+      // Populate randomSignerAddresses and randomPublicKeyMerkleProofs and randomSignatureCommitments
+      // based on randomSignatureBitfieldPositions required
+      const randomValidatorAddresses: string[] = beefyValidatorAddresses
       const randomPublicKeyMerkleProofs: string[] = []
-      for (let i = 0; i < NUMBER_OF_SIGNERS; i++) {
-        randomSignatureCommitments.push("val")
-        randomSignatureBitfieldPositions.push("val")
-        randomSignerAddresses.push("val")
-        randomPublicKeyMerkleProofs.push("val")
-      }
+      const randomSignatureCommitments: string[] = testCommitment.signedCommitmentJSON.signatures
 
       const completionResult = await lightClientBridgeContract.completeSignatureCommitment(
         id,
         testCommitment.hashedCommitment,
-        testCommitment.signedCommitmentJSON.signatures as any,
+        randomSignatureCommitments as any,
         randomSignatureBitfieldPositions as any,
-        beefyValidatorAddresses as any,
+        randomValidatorAddresses as any,
         randomPublicKeyMerkleProofs as any
       )
 
-      // TODO add assertion for the stake being refundend
+      // TODO add assertion for the stake being refunded
 
       // TODO add assertion for processPayload being called
 

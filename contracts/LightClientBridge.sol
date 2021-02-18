@@ -71,26 +71,6 @@ contract LightClientBridge {
     }
 
     /* Public Functions */
-    function testSig(bytes32 payload, bytes memory signature) public view {
-        address qq = ECDSA.recover(payload, signature);
-        console.log(qq);
-        // console.log(keccak256(abi.encodePacked(qq)));
-    }
-
-    event LogA(address a);
-
-    function testSigRaw(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 s
-    ) public {
-        console.log(ecrecover(hash, 0, s, r));
-        console.log(ecrecover(hash, 1, s, r));
-        console.log(ecrecover(hash, 27, s, r));
-        console.log(ecrecover(hash, 28, s, r));
-        emit LogA(ecrecover(hash, 28, s, r));
-    }
-
     /**
      * @notice Executed by the prover in order to begin the process of block
      * acceptance by the light client
@@ -117,8 +97,6 @@ contract LightClientBridge {
         );
 
         // TODO also add a check here that the signing validator is in validatorClaimsBitfield
-
-        console.log(ECDSA.recover(payload, validatorSignatureCommitment));
 
         /**
          * @dev Check if validatorSignatureCommitment is correct, ie. check if it matches
@@ -163,7 +141,7 @@ contract LightClientBridge {
     ) public {
         ValidationData storage data = validationData[id];
 
-        // TODO verify that sender is the same as in `newSignatureCommitment` (who? singer or relayer?)
+        // TODO verify that sender is the same as in `newSignatureCommitment`
 
         /**
          * @dev Generate an array of numbers
