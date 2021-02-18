@@ -28,32 +28,9 @@ contract ValidatorRegistry is Ownable, MerkleTree {
 
     /* Public Functions */
 
-    /**
-     * @notice Called in order to register a validator
-     * @param validator A validator to register
-     * @return success Returns true if the validator was registered
-     */
-    function registerValidator(address validator) public onlyOwner returns (bool success) {
-        /**
-         * @todo Implement this function
-         */
-        return true;
-    }
-
-    /**
-     * @notice Called in order to unregister a validator
-     * @param validator An array of validators to unregister
-     * @return success Returns true if the validator was unregistered
-     */
-    function unregisterValidator(address validator) public onlyOwner returns (bool success) {
-        /**
-         * @todo Implement this function
-         */
-        return true;
-    }
-
-    //update(newRoot)
+    //update(newRoot, _numberOfValidators)
     //MerkleTree.setNewRoot(newRoot)
+    //numberOfValidators = _numberOfValidators
 
     /**
      * @notice Checks if a validators address is a member of the merkle tree

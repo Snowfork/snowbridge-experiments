@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "./utils/Bits.sol";
 import "./ValidatorRegistry.sol";
-import "hardhat/console.sol";
 
 /**
  * @title A entry contract for the Ethereum light client
@@ -56,7 +55,6 @@ contract LightClientBridge {
     /* Constants */
 
     uint256 public constant BLOCK_WAIT_PERIOD = 45;
-    uint256 public constant NUMBER_OF_SIGNERS = 5;
     uint256 public constant MAXIMUM_NUM_SIGNERS = 167;
 
     /**
@@ -134,28 +132,29 @@ contract LightClientBridge {
     function completeSignatureCommitment(
         uint256 id,
         bytes32 payload,
-        bytes[NUMBER_OF_SIGNERS] memory randomSignatureCommitments,
-        uint8[NUMBER_OF_SIGNERS] memory randomSignatureBitfieldPositions,
-        address[NUMBER_OF_SIGNERS] memory randomValidatorAddresses,
-        bytes32[][NUMBER_OF_SIGNERS] memory randomPublicKeyMerkleProofs
+        bytes[] memory randomSignatureCommitments,
+        uint8[] memory randomSignatureBitfieldPositions,
+        address[] memory randomValidatorAddresses,
+        bytes32[][] memory randomPublicKeyMerkleProofs
     ) public {
         ValidationData storage data = validationData[id];
 
         // TODO verify that sender is the same as in `newSignatureCommitment`
+        require(msg.sender == data.senderAddress, "Error: Sender address does not match original validation data");
 
+        // TODO calculate number of required validator signatures
+        //  uint8 numberOfValidators = validatorRegistry.numberOfValidators;
+        //  requiredNumberOfSamples = numberOfValidators * 2/3
+        uint8 requiredNumberOfSamples = 5;
         /**
          * @dev Generate an array of numbers
          */
-        uint8[NUMBER_OF_SIGNERS] memory randomNumbers = getRandomNumbers(data);
-
-        //
-        //example 1: uint10[NUMBER_OF_SIGNERS]
-        //loop over NUMBER_OF_SIGNERS
+        uint8[] memory randomNumbers = getRandomNumbers(data, requiredNumberOfSamples);
 
         /**
          *  @dev For each randomSignature, do:
          */
-        for (uint256 i = 0; i < NUMBER_OF_SIGNERS; i++) {
+        for (uint256 i = 0; i < requiredNumberOfSamples; i++) {
             // @note Require random numbers generated onchain match random numbers
             // provided to transaction (this requires both arrays to remain in the order they were generated in)
             require(randomNumbers[i] == randomSignatureBitfieldPositions[i], "Error: Random number error");
@@ -206,10 +205,10 @@ contract LightClientBridge {
      * @param data a storage reference to the validationData struct
      * @return onChainRandNums an array storing the random numbers generated inside this function
      */
-    function getRandomNumbers(ValidationData storage data)
+    function getRandomNumbers(ValidationData storage data, uint8 requiredNumberOfSamples)
         private
         view
-        returns (uint8[NUMBER_OF_SIGNERS] memory onChainRandNums)
+        returns (uint8[] memory onChainRandNums)
     {
         // @note Get payload.blocknumber, add BLOCK_WAIT_PERIOD
         uint256 randomSeedBlockNum = data.blockNumber.add(BLOCK_WAIT_PERIOD);
@@ -220,7 +219,7 @@ contract LightClientBridge {
         /**
          * @todo This is just a dummy random number generation process until the final implementation is known
          */
-        for (uint8 i = 0; i < NUMBER_OF_SIGNERS; i++) {
+        for (uint8 i = 0; i < requiredNumberOfSamples; i++) {
             randomSeedBlockHash = keccak256(abi.encode(randomSeedBlockHash));
             // @note Type conversion from bytes32 -> uint8, by way of bytes1 (to work around limitations)
             onChainRandNums[i] = uint8(bytes1(randomSeedBlockHash));
