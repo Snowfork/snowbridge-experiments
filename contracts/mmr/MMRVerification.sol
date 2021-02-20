@@ -5,8 +5,35 @@ pragma solidity ^0.7.0;
  *
  * @dev MMRVerification library for MMR inclusion proofs generated
  *      by https://github.com/nervosnetwork/merkle-mountain-range.
+
+ *                  Sample 7-leaf MMR:
  *
- *      The index of this MMR implementation starts from 1 not 0.
+ *          Height 3 |      7
+ *          Height 2 |   3      6     10
+ *          Height 1 | 1  2   4  5   8  9    11
+ *                   | |--|---|--|---|--|-----|-
+ *      Leaf indexes | 0  1   2  3   4  5     6
+ *
+ *      General definitions:
+ *      - Height:         the height of the tree.
+ *      - Size:           the number of nodes in the tree.
+ *      - Nodes:          an item in the tree. A node is a leaf or a parent. Nodes' positions are ordered from 1
+ *                        to size in the order that they were added to the tree.
+ *      - Leaf Index:     the leaf's location in an ordered array of all leaf nodes. Because Solidity interprets
+ *                        0 as null, this MMR implementation internally converts leaf index to leaf position.
+ *      - Parent Node:    leaf nodes are hashed together into parent nodes. To maintain the tree's structure,
+ *                        parent nodes are hashed together until they form a mountain with a peak.
+ *      - Mountain Peak:  the local root of a mountain; it has a greater height than other nodes in the mountain.
+ *      - MMR root:       hashing each peak's hash together right-to-left gives the MMR root.
+ *
+ *      Our 7-leaf MMR has:
+ *      - Height:          3
+ *      - Size:            11
+ *      - Nodes:          [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+ *      - Leaf Indexes:   [0, 1, 2, 3, 4, 5, 6] which correspond to nodes [1, 2, 4, 5, 8, 9, 11]
+ *      - Parent Nodes:   [3, 6, 7, 10, 11]
+ *      - Mountain peaks: [7, 10, 11]
+ *      - MMR root:       hash(hash(11, 10), 7)
  */
 contract MMRVerification {
 
