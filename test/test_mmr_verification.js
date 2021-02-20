@@ -348,5 +348,34 @@ contract('MMRVerification', async () => {
         await mmrVerification.verifyInclusionProof.call(root, leafNodeHash, proof.leaf_index, proof.leaf_count, proof.items).should.eventually.equal(true);;
       });
     });
+
+    describe('1-leaf, 1-node MMR', async () => {
+
+      console.log('                 1-leaf MMR:           ');
+      console.log('                                       ');
+      console.log('    Height 1 | 1                       ');
+      console.log('             | |                       ');
+      console.log('Leaf indexes | 0                       ');
+
+      // ---------------------------- Tree contents ----------------------------
+      //  - For leaf nodes, node hash is the SCALE-encoding of the leaf data.
+      //  - For parent nodes, node hash is the hash of it's children (left, right).
+      //
+      // 0xda5e6d0616e05c6a6348605a37ca33493fc1a15ad1e6a405ee05c17843fdafed // 1  LEAF NODE
+
+      const root = "0xda5e6d0616e05c6a6348605a37ca33493fc1a15ad1e6a405ee05c17843fdafed"
+
+      it('should verify valid proof for leaf index 0 (node 1)', async () => {
+        let leafNodeHash = "0xda5e6d0616e05c6a6348605a37ca33493fc1a15ad1e6a405ee05c17843fdafed"
+        let proof = {
+          leaf_index: 0,
+          leaf_count: 1,
+          items: []
+        }
+
+        await mmrVerification.verifyInclusionProof.call(root, leafNodeHash, proof.leaf_index, proof.leaf_count, proof.items).should.eventually.equal(true);;
+      });
+
+    });
   });
 });

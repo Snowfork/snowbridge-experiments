@@ -36,13 +36,8 @@ contract MMRVerification {
             return false;
         }
 
-        // Cannot verify a proof that doesn't have any contents
-        if(proofItems.length == 0) {
-            return false;
-        }
-
         // Handle 1-leaf MMR
-        if(leafCount == 1 && leafPos == 1) {
+        if(leafCount == 1 && leafPos == 1 && leafNodeHash == root) {
             return true;
         }
 
