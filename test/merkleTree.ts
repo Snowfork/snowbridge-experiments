@@ -6,8 +6,8 @@ import { keccakFromHexString } from "ethereumjs-util"
 import { hex2buf } from "../src/utils/utils"
 
 async function testFixture() {
-  const { merkleTree, verifierAddresses } = await getMerkleTestData()
-  const merkleRoot = merkleTree.getHexRoot()
+  const { beefyMerkleTree, beefyValidatorAddresses } = await getMerkleTestData()
+  const merkleRoot = beefyMerkleTree.getHexRoot()
 
   const merkleTreeFactory = await ethers.getContractFactory("MerkleTree")
   const merkleTreeContract = (await merkleTreeFactory.deploy(merkleRoot)) as MerkleTreeContract
@@ -15,8 +15,8 @@ async function testFixture() {
 
   return {
     merkleTreeContract,
-    merkleTree,
-    verifierAddresses,
+    beefyMerkleTree,
+    beefyValidatorAddresses,
   }
 }
 
@@ -29,42 +29,42 @@ describe("MerkleTree Contract", function () {
     })
 
     it("Should set the root correctly", async function () {
-      const { merkleTreeContract, merkleTree } = await testFixture()
+      const { merkleTreeContract, beefyMerkleTree } = await testFixture()
 
-      expect(await merkleTreeContract.root()).to.equal(merkleTree.getHexRoot())
+      expect(await merkleTreeContract.root()).to.equal(beefyMerkleTree.getHexRoot())
     })
   })
 
   context("verify function", function () {
     it("Should not revert", async function () {
-      const { merkleTreeContract, merkleTree } = await testFixture()
+      const { merkleTreeContract, beefyMerkleTree } = await testFixture()
 
-      const leaf = merkleTree.getLeaves()[0]
-      const hexLeaf = merkleTree.getHexLeaves()[0]
-      const hexProof = merkleTree.getHexProof(leaf)
+      const leaf = beefyMerkleTree.getLeaves()[0]
+      const hexLeaf = beefyMerkleTree.getHexLeaves()[0]
+      const hexProof = beefyMerkleTree.getHexProof(leaf)
 
       await expect(merkleTreeContract.verify(hexLeaf, hexProof)).to.not.be.reverted
     })
 
     it("Should correctly verify with valid proofs", async function () {
-      const { merkleTreeContract, merkleTree } = await testFixture()
+      const { merkleTreeContract, beefyMerkleTree } = await testFixture()
 
-      const leaf = merkleTree.getLeaves()[0]
-      const hexLeaf = merkleTree.getHexLeaves()[0]
-      const proof = merkleTree.getProof(leaf)
-      const hexProof = merkleTree.getHexProof(leaf)
+      const leaf = beefyMerkleTree.getLeaves()[0]
+      const hexLeaf = beefyMerkleTree.getHexLeaves()[0]
+      const proof = beefyMerkleTree.getProof(leaf)
+      const hexProof = beefyMerkleTree.getHexProof(leaf)
       const root = hex2buf(await merkleTreeContract.root())
       const result = await merkleTreeContract.verify(hexLeaf, hexProof)
 
       expect(result).to.be.true
-      expect(merkleTree.verify(proof, leaf, root)).to.be.true
+      expect(beefyMerkleTree.verify(proof, leaf, root)).to.be.true
     })
 
     it("Should not verify an invalid proof", async function () {
-      const { merkleTreeContract, merkleTree } = await testFixture()
+      const { merkleTreeContract, beefyMerkleTree } = await testFixture()
 
-      const leaf = merkleTree.getLeaves()[0]
-      const hexProof = merkleTree.getHexProof(leaf)
+      const leaf = beefyMerkleTree.getLeaves()[0]
+      const hexProof = beefyMerkleTree.getHexProof(leaf)
       const badLeaf = keccakFromHexString("0x1234")
 
       const result = await merkleTreeContract.verify(badLeaf, hexProof)

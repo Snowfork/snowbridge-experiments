@@ -12,7 +12,7 @@ interface TestFile {
 }
 
 interface MerkleTestData {
-  beefyValidatorAddresses: VerifierAddresses,
+  beefyValidatorAddresses: VerifierAddresses
   beefyMerkleTree: MerkleTree
 }
 
@@ -26,19 +26,25 @@ const testFilePath = path.join(__dirname, testFileName)
 const readTestData = (): Promise<TestFile> => fs.readJSON(testFilePath) as Promise<TestFile>
 
 const beefyValidatorAddresses = [
-  '0xE04CC55ebEE1cBCE552f250e85c57B70B2E2625b',
-  '0x25451A4de12dcCc2D166922fA938E900fCc4ED24'
-];
+  "0xE04CC55ebEE1cBCE552f250e85c57B70B2E2625b",
+  "0x25451A4de12dcCc2D166922fA938E900fCc4ED24",
+]
 
 export default async (): Promise<MerkleTestData> => {
-  const { verifierPrivateKeys, verifierAddresses } = await readTestData();
-  const hashedLeaves = verifierAddresses.map(address => keccakFromHexString(address));
-  const merkleTree = new MerkleTree(hashedLeaves, HASH_ALGORITHM, MERKLE_OPTIONS_NO_SORT);
-  const beefyHashedLeaves = beefyValidatorAddresses.map(address => keccakFromHexString(address));
-  const beefyMerkleTree = new MerkleTree(beefyHashedLeaves, HASH_ALGORITHM, MERKLE_OPTIONS_NO_SORT);
+  // const { verifierPrivateKeys, verifierAddresses } = await readTestData();
+  // const hashedLeaves = verifierAddresses.map(address => keccakFromHexString(address));
+  // const merkleTree = new MerkleTree(hashedLeaves, HASH_ALGORITHM, MERKLE_OPTIONS_NO_SORT);
+  const beefyHashedLeaves = beefyValidatorAddresses.map(address => keccakFromHexString(address))
+  const beefyMerkleTree = new MerkleTree(beefyHashedLeaves, HASH_ALGORITHM, MERKLE_OPTIONS_NO_SORT)
 
   return {
     beefyValidatorAddresses,
-    beefyMerkleTree
+    beefyMerkleTree,
   }
+}
+
+export function createMerkleTree(leavesHex: string[]): MerkleTree {
+  const leavesHashed = leavesHex.map(leaf => keccakFromHexString(leaf))
+  const merkleTree = new MerkleTree(leavesHashed, HASH_ALGORITHM, MERKLE_OPTIONS_NO_SORT)
+  return merkleTree
 }

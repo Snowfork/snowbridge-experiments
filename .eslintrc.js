@@ -27,7 +27,7 @@ module.exports = {
     ],
     "@typescript-eslint/no-inferrable-types": "off",
     "@typescript-eslint/no-unused-vars": [
-      "warning",
+      "warn",
       {
         argsIgnorePattern: "_",
         varsIgnorePattern: "_",
