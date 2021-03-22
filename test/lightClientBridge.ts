@@ -65,7 +65,7 @@ describe("LightClientBridge Contract", function () {
   })
 
   describe("newSignatureCommitment function", function () {
-    it("Should not revert when submitting a valid newSignatureCommitment", async function () {
+    it.skip("Should not revert when submitting a valid newSignatureCommitment", async function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
 
       //TODO: Add bitfield stuff properly
@@ -139,7 +139,7 @@ describe("LightClientBridge Contract", function () {
   })
 
   describe("completeSignatureCommitment function", function () {
-    it("Should not revert when calling completeSignatureCommitment after newSignatureCommitment", async function () {
+    it.skip("Should not revert when calling completeSignatureCommitment after newSignatureCommitment", async function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
       const [signer] = await ethers.getSigners()
 
