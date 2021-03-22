@@ -67,9 +67,9 @@ describe("LightClientBridge Contract", function () {
       const val1PubKeyMerkleProof = valsMerkleTree.getHexProof(leaf1)
 
       // Confirm validators are in fact part of validator set
-      expect(await validatorRegistryContract.checkValidatorInSet(vals[0], val0PubKeyMerkleProof)).to.be.true
+      expect(await validatorRegistryContract.checkValidatorInSet(vals[0], 1, val0PubKeyMerkleProof)).to.be.true
 
-      expect(await validatorRegistryContract.checkValidatorInSet(vals[1], val1PubKeyMerkleProof)).to.be.true
+      expect(await validatorRegistryContract.checkValidatorInSet(vals[1], 2, val1PubKeyMerkleProof)).to.be.true
 
       const sig0 = signatureSubstratToEthereum(justificationBlock2.justification.signatures[0])
 
@@ -105,7 +105,7 @@ describe("LightClientBridge Contract", function () {
       const val0PubKeyMerkleProof = valsMerkleTree.getHexProof(leaf0)
 
       // Confirm validator proof is indeed wrong
-      expect(await validatorRegistryContract.checkValidatorInSet(vals[0], val0PubKeyMerkleProof)).to.be.false
+      expect(await validatorRegistryContract.checkValidatorInSet(vals[0], 1, val0PubKeyMerkleProof)).to.be.false
 
       const sig0 = signatureSubstratToEthereum(justificationBlock2.justification.signatures[0])
 
@@ -142,9 +142,9 @@ describe("LightClientBridge Contract", function () {
       const validatorPublicKeyMerkleProof1 = valsMerkleTree.getHexProof(leaf1)
 
       // Confirm validators are in fact part of validator set
-      expect(await validatorRegistryContract.checkValidatorInSet(vals[0], validatorPublicKeyMerkleProof0)).to.be.true
+      expect(await validatorRegistryContract.checkValidatorInSet(vals[0], 1, validatorPublicKeyMerkleProof0)).to.be.true
 
-      expect(await validatorRegistryContract.checkValidatorInSet(vals[1], validatorPublicKeyMerkleProof1)).to.be.true
+      expect(await validatorRegistryContract.checkValidatorInSet(vals[1], 2, validatorPublicKeyMerkleProof1)).to.be.true
 
       const sig0 = signatureSubstratToEthereum(justificationBlock2.justification.signatures[0])
 

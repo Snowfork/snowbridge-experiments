@@ -92,7 +92,7 @@ contract LightClientBridge {
          * @dev Check if validatorPublicKeyMerkleProof is valid based on ValidatorRegistry merkle root
          */
         require(
-            validatorRegistry.checkValidatorInSet(validatorPublicKey, validatorPublicKeyMerkleProof),
+            validatorRegistry.checkValidatorInSet(validatorPublicKey, 2, validatorPublicKeyMerkleProof),
             "Error: Sender must be in validator set"
         );
 
