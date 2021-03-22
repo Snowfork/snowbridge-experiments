@@ -28,6 +28,10 @@ async function testFixture() {
   }
 }
 
+/**
+ * Note: We can use Waffle's chai matchers here without explicitly
+ * stating `chai.use(solidity)`
+ */
 describe.only("LightClientBridge Contract", function () {
   describe("constructor", function () {
     it("Should deploy the contract successfully", async function () {
@@ -126,6 +130,7 @@ describe.only("LightClientBridge Contract", function () {
   describe("completeSignatureCommitment function", function () {
     it("Should not revert when calling completeSignatureCommitment after newSignatureCommitment", async function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
+      const [signer] = await ethers.getSigners()
 
       // TODO: Add bitfield stuff properly
       const validatorClaimsBitfield = 123
