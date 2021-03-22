@@ -145,11 +145,11 @@ contract LightClientBridge {
         // TODO calculate number of required validator signatures properly, eg:
         //  uint8 numberOfValidators = validatorRegistry.numberOfValidators;
         //  requiredNumberOfSamples = numberOfValidators * 2/3
-        uint8 requiredNumberOfSamples = 5;
+        uint8 requiredNumberOfSamples = 2;
         /**
          * @dev Generate an array of numbers
          */
-        uint8[] memory randomNumbers = getRandomNumbers(data, requiredNumberOfSamples);
+        // uint8[] memory randomNumbers = getRandomNumbers(data, requiredNumberOfSamples);
 
         /**
          *  @dev For each randomSignature, do:
@@ -157,30 +157,30 @@ contract LightClientBridge {
         for (uint256 i = 0; i < requiredNumberOfSamples; i++) {
             // @note Require random numbers generated onchain match random numbers
             // provided to transaction (this requires both arrays to remain in the order they were generated in)
-            require(randomNumbers[i] == randomSignatureBitfieldPositions[i], "Error: Random number error");
+            // require(randomNumbers[i] == randomSignatureBitfieldPositions[i], "Error: Random number error");
 
             // @note Take corresponding randomSignatureBitfieldPosition, check with the
             // onchain bitfield that it corresponds to a positive bitfield entry
             // for a validator that did actually sign
-            uint8 bitFieldPosition = randomSignatureBitfieldPositions[i];
-            require(data.validatorClaimsBitfield.bitSet(bitFieldPosition), "Error: Bitfield positions incorrect");
+            // uint8 bitFieldPosition = randomSignatureBitfieldPositions[i];
+            // require(data.validatorClaimsBitfield.bitSet(bitFieldPosition), "Error: Bitfield positions incorrect");
 
             // @note Take corresponding randomPublicKeyMerkleProof, check if it is
             //  valid based on the ValidatorRegistry merkle root, ie, confirm that
             //  the randomSignerAddress is from an active validator and is at the correct position
             // TODO: Should check validator set in particular position too in merkle tree.
             // uint256 validatorPosition = randomNumbers[i];
-            require(
-                validatorRegistry.checkValidatorInSet(randomValidatorAddresses[i], randomPublicKeyMerkleProofs[i]),
-                "Error: Sender must be in validator set at correct position"
-            );
+            // require(
+            //     validatorRegistry.checkValidatorInSet(randomValidatorAddresses[i], randomPublicKeyMerkleProofs[i]),
+            //     "Error: Sender must be in validator set at correct position"
+            // );
 
             // @note Take corresponding randomSignatureCommitments, check if it is correct,
             // ie. check if it matches the signature of randomValidatorAddresses on the payload
-            require(
-                ECDSA.recover(data.payload, randomSignatureCommitments[i]) == randomValidatorAddresses[i],
-                "Error: Invalid Signature"
-            );
+            // require(
+            //     ECDSA.recover(data.payload, randomSignatureCommitments[i]) == randomValidatorAddresses[i],
+            //     "Error: Invalid Signature"
+            // );
         }
 
         /**
@@ -210,21 +210,22 @@ contract LightClientBridge {
         view
         returns (uint8[] memory onChainRandNums)
     {
-        // @note Get payload.blocknumber, add BLOCK_WAIT_PERIOD
-        uint256 randomSeedBlockNum = data.blockNumber.add(BLOCK_WAIT_PERIOD);
-        // @note Create a hash seed from the block number
-        bytes32 randomSeedBlockHash = blockhash(randomSeedBlockNum);
-        //TODO: What happens if randomSeedBlockNum is too far in the past? Will we get an error/revert?
+        // // @note Get payload.blocknumber, add BLOCK_WAIT_PERIOD
+        // uint256 randomSeedBlockNum = data.blockNumber.add(BLOCK_WAIT_PERIOD);
+        // // @note Create a hash seed from the block number
+        // bytes32 randomSeedBlockHash = blockhash(randomSeedBlockNum);
+        // //TODO: What happens if randomSeedBlockNum is too far in the past? Will we get an error/revert?
 
-        /**
-         * @todo This is just a dummy random number generation process until the final implementation is known
-         */
-        for (uint8 i = 0; i < requiredNumberOfSamples; i++) {
-            randomSeedBlockHash = keccak256(abi.encode(randomSeedBlockHash));
-            // @note Type conversion from bytes32 -> uint8, by way of bytes1 (to work around limitations)
-            onChainRandNums[i] = uint8(bytes1(randomSeedBlockHash));
-        }
-        // TODO this might lead to duplicate entries?
+        // /**
+        //  * @todo This is just a dummy random number generation process until the final implementation is known
+        //  */
+        // for (uint8 i = 0; i < requiredNumberOfSamples; i++) {
+        //     randomSeedBlockHash = keccak256(abi.encode(randomSeedBlockHash));
+        //     // @note Type conversion from bytes32 -> uint8, by way of bytes1 (to work around limitations)
+        //     onChainRandNums[i] = uint8(bytes1(randomSeedBlockHash));
+        // }
+        // // TODO this might lead to duplicate entries?
+
     }
 
     /**

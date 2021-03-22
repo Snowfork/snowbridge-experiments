@@ -79,10 +79,13 @@ describe.only("LightClientBridge Contract", function () {
 
       expect(result).to.not.be.reverted
 
+      expect(result)
+        .to.emit(lightClientBridgeContract, "InitialVerificationSuccessful")
+        .withArgs((await result).from, (await result).blockNumber, 0)
+
       expect(await lightClientBridgeContract.currentId()).to.equal(1)
 
       // TODO add assertion for the stake being locked up (whose stake? signer? or relayer?)
-      // TODO add assertion for any event being emitted
     })
 
     it("Should revert when validatorPublicKey is not in in validatorRegistry given validatorPublicKeyMerkleProof", async function () {
@@ -162,7 +165,7 @@ describe.only("LightClientBridge Contract", function () {
       const randomSignatureCommitments: string[] = justificationBlock2.justification.signatures
 
       const validationDataID = 0
-      const completionResult = await lightClientBridgeContract.completeSignatureCommitment(
+      const completionResult = lightClientBridgeContract.completeSignatureCommitment(
         validationDataID,
         justificationBlock2.hashedCommitment,
         randomSignatureCommitments,
@@ -172,11 +175,19 @@ describe.only("LightClientBridge Contract", function () {
       )
       expect(completionResult).to.not.be.reverted
 
+      expect(completionResult)
+        .to.emit(lightClientBridgeContract, "FinalVerificationSuccessful")
+        .withArgs(
+          (await completionResult).from,
+          "0x01edc5e9703f9a95a6611f6d07de73fd787730240d16a7f1f232ada977bef2ab",
+          0
+        )
+
+      expect(await lightClientBridgeContract.currentId()).to.equal(1)
+
       // TODO add assertion for the stake being refunded
 
       // TODO add assertion for processPayload being called
-
-      // TODO add assertion for event being emitted
     })
 
     it("Should revert when random signature positions are different (different bitfield)")
