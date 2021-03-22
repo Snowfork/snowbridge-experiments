@@ -31,7 +31,7 @@ async function testFixture() {
   }
 }
 
-describe.only("ValidatorRegistry Contract", function () {
+describe("ValidatorRegistry Contract", function () {
   context("constructor", function () {
     it("Should deploy the contract successfully", async function () {
       const { validatorRegistryContract } = await testFixture()
@@ -92,7 +92,7 @@ describe.only("ValidatorRegistry Contract", function () {
 
       const hexProof = beefyMerkleTree.getHexProof(leaf)
       const senderAddress = beefyValidatorAddresses[0]
-      const result = await validatorRegistryContract.checkValidatorInSet(senderAddress, 1, hexProof)
+      const result = await validatorRegistryContract.checkValidatorInSet(senderAddress, 0, hexProof)
 
       expect(result).to.be.true
     })
@@ -108,7 +108,7 @@ describe.only("ValidatorRegistry Contract", function () {
 
       const hexProof = beefyMerkleTree.getHexProof(leaf)
       const senderAddress = beefyValidatorAddresses[0]
-      const result = await validatorRegistryContract.checkValidatorInSet(senderAddress, 2, hexProof)
+      const result = await validatorRegistryContract.checkValidatorInSet(senderAddress, 1, hexProof)
 
       expect(result).to.be.false
     })
@@ -125,7 +125,7 @@ describe.only("ValidatorRegistry Contract", function () {
 
       const hexProof1 = beefyMerkleTree.getHexProof(leaf1)
       const badSenderAddress0 = beefyValidatorAddresses[0]
-      const result = await validatorRegistryContract.checkValidatorInSet(badSenderAddress0, 1, hexProof1)
+      const result = await validatorRegistryContract.checkValidatorInSet(badSenderAddress0, 0, hexProof1)
 
       expect(result).to.be.false
     })
