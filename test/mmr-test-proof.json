@@ -1,0 +1,16 @@
+{
+    "leaf_value_bytes": [0, 128, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 36, 6, 0, 0, 0, 0, 0, 0, 0, 0],
+    "leaf_hash": "0xc09d4a008a0f1ef37860bef33ec3088ccd94268c0bfba7ff1b3c2a1075b0eb92", 
+    "proof": {
+        /// The index of the leaf the proof is for.
+        "leaf_index": 5,
+        // Number of leaves in MMR, when the proof was generated.
+        "leaf_count": 7,
+        /// Proof elements (hashes of siblings of inner nodes on the path to the leaf).
+        "items": [
+            "0xe53ee36ba6c068b1a6cfef7862fed5005df55615e1c9fa6eeefe08329ac4b94b",
+            "0x99af07747700389aba6e6cb0ee5d553fa1241688d9f96e48987bca1d7f275cbe",
+            "0xaf3327deed0515c8d1902c9b5cd375942d42f388f3bfe3d1cd6e1b86f9cc456c",
+        ]
+    }
+}
