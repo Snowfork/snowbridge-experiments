@@ -6,7 +6,7 @@ import generateSampleData from "../src/utils/sampleData"
 import { buf2hex, getMerkleRoot, hex2buf } from "../src/utils/utils"
 import type { Verification } from "types"
 
-describe.only("Verification Contract", function () {
+describe("Verification Contract", function () {
   let verification: Verification
   let hashedData: Buffer[]
   let hexData: string[]
@@ -82,7 +82,7 @@ describe.only("Verification Contract", function () {
         }
       })
 
-      describe.only("verify merkle proof with position", async function () {
+      describe("verify merkle proof with position", async function () {
         const hashedData = [...generateSampleData(100)].map(x => keccakFromString(x))
 
         const cases = [
@@ -124,7 +124,9 @@ describe.only("Verification Contract", function () {
         ]
 
         for (const c of cases) {
-          it(`Should ${c.succeed ? "succeed" : "fail"} for ${c.data.length} leaves with a proof for leaf at position ${c.proofForLeaf} and verifying leaf at position ${c.verifyLeaf}`, async function () {
+          it(`Should ${c.succeed ? "succeed" : "fail"} for ${c.data.length} leaves with a proof for leaf at position ${
+            c.proofForLeaf
+          } and verifying leaf at position ${c.verifyLeaf}`, async function () {
             const tree = new MerkleTree(c.data, keccak, { sort: false })
 
             tree.print()
@@ -145,13 +147,19 @@ describe.only("Verification Contract", function () {
 
             // expect(tree.verifyMultiProof(root, [c.proofForLeaf], [leaf], tree.getDepth(), proof)).to.be.true
 
-            const result = await verification.verifyMerkleLeafAtPosition(hexRoot, hexLeaf, c.verifyLeaf, c.data.length, hexProof)
+            const result = await verification.verifyMerkleLeafAtPosition(
+              hexRoot,
+              hexLeaf,
+              c.verifyLeaf,
+              c.data.length,
+              hexProof
+            )
             expect(result).to.equal(c.succeed)
           })
         }
       })
 
-      it("Test if correct hash, but wrong position", async function() {
+      it("Test if correct hash, but wrong position", async function () {
         const tree = new MerkleTree(hashedData, keccak, { sort: false })
 
         const root = tree.getRoot()

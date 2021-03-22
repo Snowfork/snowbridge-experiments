@@ -4,7 +4,7 @@ import { ethers } from "hardhat"
 import { Bitfield } from "../types"
 import { bigNumberArrayToBin } from "./utils/binary"
 
-describe.only("Bitfield contract", function () {
+describe("Bitfield contract", function () {
   let bitfield: Bitfield
 
   beforeEach(async function () {
@@ -78,7 +78,7 @@ describe.only("Bitfield contract", function () {
       expect(result).to.equal(667)
     })
 
-    describe.only("cases", async function () {
+    describe("cases", async function () {
       const cases = [
         { in: [BigNumber.from(0)], out: 0 },
         { in: [BigNumber.from(1)], out: 1 },
