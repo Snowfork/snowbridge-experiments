@@ -1,15 +1,15 @@
 import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { ethers } from "hardhat"
-import { Bitfield } from "../types"
+import { BitfieldComparison } from "../types"
 import { bigNumberArrayToBin } from "./utils/binary"
 
-describe("Bitfield contract", function () {
-  let bitfield: Bitfield
+describe("BitfieldComparison contract", function () {
+  let bitfield: BitfieldComparison
 
   beforeEach(async function () {
-    const bitfieldFactory = await ethers.getContractFactory("Bitfield")
-    bitfield = (await bitfieldFactory.deploy()) as Bitfield
+    const bitfieldFactory = await ethers.getContractFactory("BitfieldComparison")
+    bitfield = (await bitfieldFactory.deploy()) as BitfieldComparison
     await bitfield.deployed()
   })
 

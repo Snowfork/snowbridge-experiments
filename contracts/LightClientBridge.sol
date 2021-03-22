@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "./utils/Bits.sol";
+import "./utils/Bitfield.sol";
 import "./ValidatorRegistry.sol";
 
 /**
@@ -13,6 +14,7 @@ import "./ValidatorRegistry.sol";
 contract LightClientBridge {
     using SafeMath for uint256;
     using Bits for uint256;
+    using Bitfield for uint256[];
 
     /* Events */
 
@@ -42,7 +44,7 @@ contract LightClientBridge {
     struct ValidationData {
         address senderAddress;
         bytes32 payload;
-        uint256 validatorClaimsBitfield;
+        uint256[] validatorClaimsBitfield;
         uint256 blockNumber;
     }
 
@@ -81,7 +83,7 @@ contract LightClientBridge {
      */
     function newSignatureCommitment(
         bytes32 payload,
-        uint256 validatorClaimsBitfield,
+        uint256[] memory validatorClaimsBitfield,
         bytes memory validatorSignatureCommitment,
         address validatorPublicKey,
         bytes32[] calldata validatorPublicKeyMerkleProof
@@ -94,8 +96,6 @@ contract LightClientBridge {
             "Error: Sender must be in validator set"
         );
 
-        // TODO also add a check here that the signing validator is in validatorClaimsBitfield
-
         /**
          * @dev Check if validatorSignatureCommitment is correct, ie. check if it matches
          * the signature of senderPublicKey on the payload
@@ -106,6 +106,8 @@ contract LightClientBridge {
          * @dev Check that the bitfield actually contains enough claims to be succesful, ie, > 2/3
          */
         // TODO
+        // require(validatorClaimsBitfield.countSetBits() >= validatorRegistry.validatorCount,
+        // "Error: Invalid Signature");
 
         /**
          * @todo Lock up the sender stake as collateral
@@ -133,7 +135,7 @@ contract LightClientBridge {
         uint256 id,
         bytes32 payload,
         bytes[] memory randomSignatureCommitments,
-        uint8[] memory randomSignatureBitfieldPositions,
+        uint256[] memory randomSignatureBitfieldPositions,
         address[] memory randomValidatorAddresses,
         bytes32[][] memory randomPublicKeyMerkleProofs
     ) public {

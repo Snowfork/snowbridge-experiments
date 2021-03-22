@@ -58,7 +58,7 @@ describe("LightClientBridge Contract", function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
 
       //TODO: Add bitfield stuff properly
-      const validatorClaimsBitfield = 123
+      const validatorClaimsBitfield = [1]
 
       // Get validator leaves and proofs for each leaf
       const leaf0 = valsMerkleTree.getLeaves()[0]
@@ -96,7 +96,7 @@ describe("LightClientBridge Contract", function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
 
       //TODO: Add bitfield stuff properly
-      const validatorClaimsBitfield = 123
+      const validatorClaimsBitfield = [1]
 
       // Get proof for wrong leaf (wrong authority)
       let leaf0 = valsMerkleTree.getLeaves()[0]
@@ -133,7 +133,7 @@ describe("LightClientBridge Contract", function () {
       const [signer] = await ethers.getSigners()
 
       // TODO: Add bitfield stuff properly
-      const validatorClaimsBitfield = 123
+      const validatorClaimsBitfield = [12]
 
       // Get validator leaves and proofs for each leaf
       const leaf0 = valsMerkleTree.getLeaves()[0]

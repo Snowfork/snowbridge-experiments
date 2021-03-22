@@ -3,7 +3,7 @@ pragma solidity ^0.7.0;
 
 import "./Bits.sol";
 
-contract Bitfield {
+library Bitfield {
     uint256 internal constant M1 = 0x5555555555555555555555555555555555555555555555555555555555555555;
     uint256 internal constant M2 = 0x3333333333333333333333333333333333333333333333333333333333333333;
     uint256 internal constant M4  = 0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f;
@@ -17,74 +17,11 @@ contract Bitfield {
     uint256 internal constant ONE = uint256(1);
     using Bits for uint256;
 
-    function randomNBits(uint256 seed, uint length, uint n)
-        public
-        pure
-        returns (uint256[] memory bitfield)
-    {
-        require(n <= length, "`length` of bitfield must be <= `n` randomly set bits");
-
-        uint found = 0;
-
-        uint256 words = length / 256;
-        if (length % 256 > 0) {
-            words++;
-        }
-        bitfield = new uint256[](words);
-
-        for (uint i = 0; found < n; i++) {
-            bytes32 randomness = keccak256(abi.encode(seed + i));
-            uint256 index = uint256(randomness) % length;
-
-            if (isSet(bitfield, index)) {
-                // bit already set, try again
-                continue;
-            }
-
-            set(bitfield, index);
-
-            found++;
-        }
-
-        return bitfield;
-    }
-
-    /**
-     * Counts the number of set bits in the `prior`, then draws a random number lower than that count, finds the
-     * corresponding index, and sets it to true. Repeats that `n` times.
-     */
-    function randomNBitsFromPriorCounting(uint256 seed, uint256[] memory prior, uint n)
-        public
-        pure
-        returns (uint256[] memory bitfield)
-    {
-        uint256 priorBits = countSetBits(prior);
-        require(n <= priorBits, "`n` must be <= number of set bits in `prior`");
-
-        // track which numbers are still available
-        uint256[] memory available = new uint256[](prior.length);
-        available = prior;
-
-        bitfield = new uint256[](prior.length);
-
-        for (uint i = 0; i < n; i++) {
-            bytes32 randomness = keccak256(abi.encode(seed + i));
-            uint256 num = (uint256(randomness) % (priorBits - i)) + 1;
-
-            uint256 index = indexOfNthSetBit(available, num);
-
-            clear(available, index);
-            set(bitfield, index);
-        }
-
-        return bitfield;
-    }
-
     /**
      * Draws a random number, derives an index in the bitfield, and sets the bit if it is in the `prior` and not yet
      * set. Repeats that `n` times.
      */
-    function randomNBitsFromPriorRejectionSampling(uint256 seed, uint256[] memory prior, uint n)
+    function randomNBitsFromPrior(uint256 seed, uint256[] memory prior, uint n)
         public
         pure
         returns (uint256[] memory bitfield)
@@ -117,65 +54,7 @@ contract Bitfield {
         return bitfield;
     }
 
-    /**
-     * Notice that `n` here is starting at `1`, meaning that in a bitfield 0100 the `n = 1` index would be `2` (starting
-     * from right)
-     */
-    function indexOfNthSetBit(uint256[] memory self, uint n) public pure returns (uint256) {
-        uint256 index = 0;
-        for (uint i = 0; i < self.length; i++) {
-            for (uint j = 0; j < 256; j++) {
-                if (self[i].bitSet(uint8(j))) {
-                    n--;
-                }
-
-                if (n == 0) {
-                    return index;
-                }
-
-                index++;
-            }
-        }
-        revert("index not found, make sure enough bits are set");
-    }
-
     function countSetBits(uint256[] memory self) public pure returns (uint256) {
-        uint256 count = 0;
-        for (uint i = 0; i < self.length; i++) {
-            for (uint j = 0; j < 256; j++) {
-                if (self[i].bitSet(uint8(j))) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    function countSetShift(uint256[] memory self) public pure returns (uint256) {
-        uint256 count = 0;
-        for (uint i = 0; i < self.length; i++) {
-            while (self[i] != 0) {
-                if (self[i] & 1 == 1) {
-                    count++;
-                }
-                self[i] >>= 1;
-            }
-        }
-        return count;
-    }
-
-    function countSetBitsKernighan(uint256[] memory self) public pure returns (uint256) {
-        uint256 count = 0;
-        for (uint i = 0; i < self.length; i++) {
-            while (self[i] != 0) {
-                self[i] = self[i] & (self[i] - 1);
-                count++;
-            }
-        }
-        return count;
-    }
-
-    function countSetBitsHammingWeight(uint256[] memory self) public pure returns (uint256) {
         uint256 count = 0;
         for (uint i = 0; i < self.length; i++) {
             uint256 x = self[i];
@@ -190,14 +69,6 @@ contract Bitfield {
             x = (x & M64) + ((x >> 64) & M64); //put count of each 128 bits into those 128 bits
             x = (x & M128) + ((x >> 128) & M128); //put count of each 256 bits into those 256 bits
             count += x;
-
-            // TODO improve efficiency by applying simplifications from https://en.wikipedia.org/wiki/Hamming_weight
-            // x -= (x >> 1) & M1;             //put count of each 2 bits into those 2 bits
-            // x = (x & M2) + ((x >> 2) & M2); //put count of each 4 bits into those 4 bits
-            // x = (x + (x >> 4)) & M4;        //put count of each 8 bits into those 8 bits
-            // x = (x + (x >> 8)) & M8;        //put count of each 16 bits into those 16 bits
-            // x = (x + (x >> 16)) & M16;        //put count of each 32 bits into those 32 bits
-            // count += (x * H01) >> 224;  //returns left 8 bits of x + (x<<32) + (x<<64) + (x<<96) + ...
         }
         return count;
     }
