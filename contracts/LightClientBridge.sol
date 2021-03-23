@@ -77,14 +77,16 @@ contract LightClientBridge {
      * @param payload contains the payload signed by the validator(s)
      * @param validatorClaimsBitfield a bitfield containing a membership status of each
      * validator who has claimed to have signed the payload
-     * @param validatorPublicKey the public key of an arbitrary validator
-     * @param validatorSignatureCommitment the signature of an arbitrary validator
-     * @param validatorPublicKeyMerkleProof Proof required for validation of the Merkle tree
+     * @param validatorSignature the signature of one validator
+     * @param validatorPosition the position of the validator, index starting at 0
+     * @param validatorPublicKey the public key of the validator
+     * @param validatorPublicKeyMerkleProof proof required for validation of the public key in the validator merkle tree
      */
     function newSignatureCommitment(
         bytes32 payload,
         uint256[] memory validatorClaimsBitfield,
-        bytes memory validatorSignatureCommitment,
+        bytes memory validatorSignature,
+        uint256 validatorPosition,
         address validatorPublicKey,
         bytes32[] calldata validatorPublicKeyMerkleProof
     ) public payable {
@@ -92,15 +94,15 @@ contract LightClientBridge {
          * @dev Check if validatorPublicKeyMerkleProof is valid based on ValidatorRegistry merkle root
          */
         require(
-            validatorRegistry.checkValidatorInSet(validatorPublicKey, 2, validatorPublicKeyMerkleProof),
+            validatorRegistry.checkValidatorInSet(validatorPublicKey, validatorPosition, validatorPublicKeyMerkleProof),
             "Error: Sender must be in validator set"
         );
 
         /**
-         * @dev Check if validatorSignatureCommitment is correct, ie. check if it matches
+         * @dev Check if validatorSignature is correct, ie. check if it matches
          * the signature of senderPublicKey on the payload
          */
-        require(ECDSA.recover(payload, validatorSignatureCommitment) == validatorPublicKey, "Error: Invalid Signature");
+        require(ECDSA.recover(payload, validatorSignature) == validatorPublicKey, "Error: Invalid Signature");
 
         /**
          * @dev Check that the bitfield actually contains enough claims to be succesful, ie, > 2/3
@@ -126,18 +128,18 @@ contract LightClientBridge {
      * @notice Performs the second step in the validation logic
      * @param id an identifying value generated in the previous transaction
      * @param payload contains the payload signed by the validator(s)
-     * @param randomSignatureCommitments an array of signatures from the randomly chosen validators
-     * @param randomSignatureBitfieldPositions an array of bitfields from the chosen validators
-     * @param randomValidatorAddresses an array of the ethereum address of each signer
-     * @param randomPublicKeyMerkleProofs an array of merkle proofs from the chosen validators
+     * @param signatures an array of signatures from the randomly chosen validators
+     * @param validatorPositionsBitfield an array of bitfields from the chosen validators
+     * @param validatorPublicKeys an array of the public key of each signer
+     * @param validatorPublicKeyMerkleProofs an array of merkle proofs from the chosen validators
      */
     function completeSignatureCommitment(
         uint256 id,
         bytes32 payload,
-        bytes[] memory randomSignatureCommitments,
-        uint256[] memory randomSignatureBitfieldPositions,
-        address[] memory randomValidatorAddresses,
-        bytes32[][] memory randomPublicKeyMerkleProofs
+        bytes[] memory signatures,
+        uint256[] memory validatorPositionsBitfield,
+        address[] memory validatorPublicKeys,
+        bytes32[][] memory validatorPublicKeyMerkleProofs
     ) public {
         ValidationData storage data = validationData[id];
 
@@ -159,12 +161,12 @@ contract LightClientBridge {
         for (uint256 i = 0; i < requiredNumberOfSamples; i++) {
             // @note Require random numbers generated onchain match random numbers
             // provided to transaction (this requires both arrays to remain in the order they were generated in)
-            // require(randomNumbers[i] == randomSignatureBitfieldPositions[i], "Error: Random number error");
+            // require(randomNumbers[i] == validatorPositionsBitfield[i], "Error: Random number error");
 
             // @note Take corresponding randomSignatureBitfieldPosition, check with the
             // onchain bitfield that it corresponds to a positive bitfield entry
             // for a validator that did actually sign
-            // uint8 bitFieldPosition = randomSignatureBitfieldPositions[i];
+            // uint8 bitFieldPosition = validatorPositionsBitfield[i];
             // require(data.validatorClaimsBitfield.bitSet(bitFieldPosition), "Error: Bitfield positions incorrect");
 
             // @note Take corresponding randomPublicKeyMerkleProof, check if it is
@@ -173,14 +175,14 @@ contract LightClientBridge {
             // TODO: Should check validator set in particular position too in merkle tree.
             // uint256 validatorPosition = randomNumbers[i];
             // require(
-            //     validatorRegistry.checkValidatorInSet(randomValidatorAddresses[i], randomPublicKeyMerkleProofs[i]),
+            //     validatorRegistry.checkValidatorInSet(validatorPublicKeys[i], validatorPublicKeyMerkleProofs[i]),
             //     "Error: Sender must be in validator set at correct position"
             // );
 
-            // @note Take corresponding randomSignatureCommitments, check if it is correct,
-            // ie. check if it matches the signature of randomValidatorAddresses on the payload
+            // @note Take corresponding signatures, check if it is correct,
+            // ie. check if it matches the signature of validatorPublicKeys on the payload
             // require(
-            //     ECDSA.recover(data.payload, randomSignatureCommitments[i]) == randomValidatorAddresses[i],
+            //     ECDSA.recover(data.payload, signatures[i]) == validatorPublicKeys[i],
             //     "Error: Invalid Signature"
             // );
         }

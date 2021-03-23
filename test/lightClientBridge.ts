@@ -65,7 +65,7 @@ describe("LightClientBridge Contract", function () {
   })
 
   describe("newSignatureCommitment function", function () {
-    it.skip("Should not revert when submitting a valid newSignatureCommitment", async function () {
+    it("Should not revert when submitting a valid newSignatureCommitment", async function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
 
       //TODO: Add bitfield stuff properly
@@ -88,6 +88,7 @@ describe("LightClientBridge Contract", function () {
         justificationBlock2.hashedCommitment,
         validatorClaimsBitfield,
         sig0,
+        0,
         vals[0],
         val0PubKeyMerkleProof
       )
@@ -101,6 +102,33 @@ describe("LightClientBridge Contract", function () {
       expect(await lightClientBridgeContract.currentId()).to.equal(1)
 
       // TODO add assertion for the stake being locked up (whose stake? signer? or relayer?)
+    })
+
+    it("Should not revert when position is wrong", async function () {
+      const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
+
+      //TODO: Add bitfield stuff properly
+      const validatorClaimsBitfield = [1]
+
+      // Get validator leaves and proofs for each leaf
+      const leaf0 = valsMerkleTree.getLeaves()[0]
+      const val0PubKeyMerkleProof = valsMerkleTree.getHexProof(leaf0)
+      const sig0 = signatureSubstratToEthereum(justificationBlock2.justification.signatures[0])
+      // Confirm validators are in fact part of validator set
+      expect(await validatorRegistryContract.checkValidatorInSet(vals[0], 0, val0PubKeyMerkleProof)).to.be.true
+
+      const result = lightClientBridgeContract.newSignatureCommitment(
+        justificationBlock2.hashedCommitment,
+        validatorClaimsBitfield,
+        sig0,
+        1,
+        vals[0],
+        val0PubKeyMerkleProof
+      )
+
+      expect(result).to.be.reverted
+
+      expect(await lightClientBridgeContract.currentId()).to.equal(0)
     })
 
     it("Should revert when validatorPublicKey is not in in validatorRegistry given validatorPublicKeyMerkleProof", async function () {
@@ -124,6 +152,7 @@ describe("LightClientBridge Contract", function () {
         justificationBlock2.hashedCommitment,
         validatorClaimsBitfield,
         sig0,
+        0,
         vals[0] as any,
         val0PubKeyMerkleProof
       )
@@ -139,7 +168,7 @@ describe("LightClientBridge Contract", function () {
   })
 
   describe("completeSignatureCommitment function", function () {
-    it.skip("Should not revert when calling completeSignatureCommitment after newSignatureCommitment", async function () {
+    it("Should not revert when calling completeSignatureCommitment after newSignatureCommitment", async function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
       const [signer] = await ethers.getSigners()
 
@@ -163,6 +192,7 @@ describe("LightClientBridge Contract", function () {
         justificationBlock2.hashedCommitment,
         validatorClaimsBitfield,
         sig0,
+        0,
         vals[0] as any,
         validatorPublicKeyMerkleProof0
       )
