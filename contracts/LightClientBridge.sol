@@ -56,6 +56,8 @@ contract LightClientBridge {
 
     /* Constants */
 
+    uint256 public constant THRESHOLD_NOM = 2;
+    uint256 public constant THRESHOLD_DENOM = 3;
     uint256 public constant BLOCK_WAIT_PERIOD = 45;
     uint256 public constant MAXIMUM_NUM_SIGNERS = 167;
 
@@ -107,9 +109,8 @@ contract LightClientBridge {
         /**
          * @dev Check that the bitfield actually contains enough claims to be succesful, ie, > 2/3
          */
-        // TODO
-        // require(validatorClaimsBitfield.countSetBits() >= validatorRegistry.validatorCount,
-        // "Error: Invalid Signature");
+        require(validatorClaimsBitfield.countSetBits() > validatorRegistry.numOfValidators() * THRESHOLD_NOM /
+            THRESHOLD_DENOM, "Error: Bitfield not enough validators");
 
         /**
          * @todo Lock up the sender stake as collateral

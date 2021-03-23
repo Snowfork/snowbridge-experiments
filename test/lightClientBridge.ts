@@ -2,7 +2,7 @@ import { expect } from "chai"
 import web3 from "web3"
 import { ethers, waffle, artifacts } from "hardhat"
 import getMerkleTestData, { createMerkleTree } from "./data/merkleTestData"
-import { LightClientBridge, MerkleProof, ValidatorRegistry } from "../types"
+import { Bitfield, LightClientBridge, MerkleProof, ValidatorRegistry } from "../types"
 import { authoritySet0, justificationBlock2 } from "./lightClientBridgeFixtures"
 import { signatureSubstratToEthereum } from "../src/utils/signatureSubstratToEthereum"
 
@@ -13,6 +13,10 @@ async function testFixture() {
   const merkleProofFactory = await ethers.getContractFactory("MerkleProof")
   const merkleProofContract = (await merkleProofFactory.deploy()) as MerkleProof
   await merkleProofContract.deployed()
+
+  const bitfieldFactory = await ethers.getContractFactory("Bitfield")
+  const bitfieldContract = (await bitfieldFactory.deploy()) as Bitfield
+  await bitfieldContract.deployed()
 
   const validatorRegistryFactory = await ethers.getContractFactory("ValidatorRegistry", {
     libraries: {
@@ -25,7 +29,11 @@ async function testFixture() {
   )) as ValidatorRegistry
   await validatorRegistryContract.deployed()
 
-  const lightClientBridgeFactory = await ethers.getContractFactory("LightClientBridge")
+  const lightClientBridgeFactory = await ethers.getContractFactory("LightClientBridge", {
+    libraries: {
+      Bitfield: bitfieldContract.address,
+    },
+  })
   const lightClientBridgeContract = (await lightClientBridgeFactory.deploy(
     validatorRegistryContract.address
   )) as LightClientBridge
@@ -68,8 +76,7 @@ describe("LightClientBridge Contract", function () {
     it("Should not revert when submitting a valid newSignatureCommitment", async function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
 
-      //TODO: Add bitfield stuff properly
-      const validatorClaimsBitfield = [1]
+      const validatorClaimsBitfield = [3]
 
       // Get validator leaves and proofs for each leaf
       const leaf0 = valsMerkleTree.getLeaves()[0]
@@ -104,11 +111,10 @@ describe("LightClientBridge Contract", function () {
       // TODO add assertion for the stake being locked up (whose stake? signer? or relayer?)
     })
 
-    it("Should not revert when position is wrong", async function () {
+    it("Should revert when position is wrong", async function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
 
-      //TODO: Add bitfield stuff properly
-      const validatorClaimsBitfield = [1]
+      const validatorClaimsBitfield = [3]
 
       // Get validator leaves and proofs for each leaf
       const leaf0 = valsMerkleTree.getLeaves()[0]
@@ -126,7 +132,7 @@ describe("LightClientBridge Contract", function () {
         val0PubKeyMerkleProof
       )
 
-      expect(result).to.be.reverted
+      expect(result).to.be.revertedWith("a")
 
       expect(await lightClientBridgeContract.currentId()).to.equal(0)
     })
@@ -134,8 +140,7 @@ describe("LightClientBridge Contract", function () {
     it("Should revert when validatorPublicKey is not in in validatorRegistry given validatorPublicKeyMerkleProof", async function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
 
-      //TODO: Add bitfield stuff properly
-      const validatorClaimsBitfield = [1]
+      const validatorClaimsBitfield = [3]
 
       // Get proof for wrong leaf (wrong authority)
       let leaf0 = valsMerkleTree.getLeaves()[0]
@@ -157,14 +162,40 @@ describe("LightClientBridge Contract", function () {
         val0PubKeyMerkleProof
       )
 
-      expect(result).to.be.reverted
+      expect(result).to.be.revertedWith("c")
 
       expect(await lightClientBridgeContract.currentId()).to.equal(0)
     })
 
     it("Should revert when validatorPublicKey is not in validatorClaimsBitfield")
     it("Should revert when validatorPublicKey is not signer of payload in validatorSignatureCommitment")
-    it("Should revert when validatorClaimsBitfield is too short")
+    it("Should revert when validatorClaimsBitfield is too short", async function () {
+      const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
+
+      const validatorClaimsBitfield = [0]
+
+      // Get validator leaves and proofs for each leaf
+      const leaf0 = valsMerkleTree.getLeaves()[0]
+      const val0PubKeyMerkleProof = valsMerkleTree.getHexProof(leaf0)
+
+      // Confirm validators are in fact part of validator set
+      expect(await validatorRegistryContract.checkValidatorInSet(vals[0], 0, val0PubKeyMerkleProof)).to.be.true
+
+      const sig0 = signatureSubstratToEthereum(justificationBlock2.justification.signatures[0])
+
+      const result = lightClientBridgeContract.newSignatureCommitment(
+        justificationBlock2.hashedCommitment,
+        validatorClaimsBitfield,
+        sig0,
+        0,
+        vals[0],
+        val0PubKeyMerkleProof
+      )
+
+      expect(result).to.be.revertedWith("Error: Bitfield not enough validators")
+
+      expect(await lightClientBridgeContract.currentId()).to.equal(0)
+    })
   })
 
   describe("completeSignatureCommitment function", function () {
@@ -172,8 +203,7 @@ describe("LightClientBridge Contract", function () {
       const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
       const [signer] = await ethers.getSigners()
 
-      // TODO: Add bitfield stuff properly
-      const validatorClaimsBitfield = [12]
+      const validatorClaimsBitfield = [3]
 
       // Get validator leaves and proofs for each leaf
       const leaf0 = valsMerkleTree.getLeaves()[0]
