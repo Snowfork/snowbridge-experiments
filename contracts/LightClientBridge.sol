@@ -97,7 +97,7 @@ contract LightClientBridge {
          */
         require(
             validatorRegistry.checkValidatorInSet(validatorPublicKey, validatorPosition, validatorPublicKeyMerkleProof),
-            "Error: Sender must be in validator set"
+            "Error: Sender must be in validator set at correct position"
         );
 
         /**
@@ -130,7 +130,7 @@ contract LightClientBridge {
      * @param id an identifying value generated in the previous transaction
      * @param payload contains the payload signed by the validator(s)
      * @param signatures an array of signatures from the randomly chosen validators
-     * @param validatorPositionsBitfield an array of bitfields from the chosen validators
+     * @param validatorPositions an array of bitfields from the chosen validators
      * @param validatorPublicKeys an array of the public key of each signer
      * @param validatorPublicKeyMerkleProofs an array of merkle proofs from the chosen validators
      */
@@ -138,55 +138,71 @@ contract LightClientBridge {
         uint256 id,
         bytes32 payload,
         bytes[] memory signatures,
-        uint256[] memory validatorPositionsBitfield,
+        uint256[] memory validatorPositions,
         address[] memory validatorPublicKeys,
         bytes32[][] memory validatorPublicKeyMerkleProofs
     ) public {
         ValidationData storage data = validationData[id];
 
-        // TODO verify that sender is the same as in `newSignatureCommitment`
+        /**
+         * @dev verify that sender is the same as in `newSignatureCommitment`
+         */
         require(msg.sender == data.senderAddress, "Error: Sender address does not match original validation data");
 
-        // TODO calculate number of required validator signatures properly, eg:
-        //  uint8 numberOfValidators = validatorRegistry.numberOfValidators;
-        //  requiredNumberOfSamples = numberOfValidators * 2/3
-        uint8 requiredNumberOfSamples = 2;
+        uint256 requiredNumOfSignatures = validatorRegistry.numOfValidators() * THRESHOLD_NOM / THRESHOLD_DENOM;
+
+        /**
+         * @dev verify that required number of signatures, positions, public keys and merkle proofs are
+         * submitted
+         */
+        require(signatures.length == requiredNumOfSignatures, "Error: Number of signatures does not match required");
+        require(validatorPositions.length == requiredNumOfSignatures,
+            "Error: Number of validator positions does not match required");
+        require(validatorPublicKeys.length == requiredNumOfSignatures,
+            "Error: Number of validator public keys does not match required");
+        require(validatorPublicKeyMerkleProofs.length == requiredNumOfSignatures,
+            "Error: Number of validator public keys does not match required");
+
         /**
          * @dev Generate an array of numbers
          */
-        // uint8[] memory randomNumbers = getRandomNumbers(data, requiredNumberOfSamples);
+        uint256[] memory randomBitfield = Bitfield.randomNBitsFromPrior(getSeed(data), data.validatorClaimsBitfield,
+            requiredNumOfSignatures);
 
         /**
          *  @dev For each randomSignature, do:
          */
-        for (uint256 i = 0; i < requiredNumberOfSamples; i++) {
-            // @note Require random numbers generated onchain match random numbers
-            // provided to transaction (this requires both arrays to remain in the order they were generated in)
-            // require(randomNumbers[i] == validatorPositionsBitfield[i], "Error: Random number error");
+        for (uint256 i = 0; i < requiredNumOfSignatures; i++) {
+            /**
+             * @dev Check if validator in randomBitfield
+             */
+            require(
+                randomBitfield.isSet(validatorPositions[i]), "Error: Validator must be once in bitfield"
+            );
 
-            // @note Take corresponding randomSignatureBitfieldPosition, check with the
-            // onchain bitfield that it corresponds to a positive bitfield entry
-            // for a validator that did actually sign
-            // uint8 bitFieldPosition = validatorPositionsBitfield[i];
-            // require(data.validatorClaimsBitfield.bitSet(bitFieldPosition), "Error: Bitfield positions incorrect");
+            /**
+             * @dev Remove validator from randomBitfield such that no validator can appear twice in signatures
+             */
+            randomBitfield.clear(validatorPositions[i]);
 
-            // @note Take corresponding randomPublicKeyMerkleProof, check if it is
-            //  valid based on the ValidatorRegistry merkle root, ie, confirm that
-            //  the randomSignerAddress is from an active validator and is at the correct position
-            // TODO: Should check validator set in particular position too in merkle tree.
-            // uint256 validatorPosition = randomNumbers[i];
-            // require(
-            //     validatorRegistry.checkValidatorInSet(validatorPublicKeys[i], validatorPublicKeyMerkleProofs[i]),
-            //     "Error: Sender must be in validator set at correct position"
-            // );
+            /**
+             * @dev Check if merkle proof is valid
+             */
+            require(
+                validatorRegistry.checkValidatorInSet(validatorPublicKeys[i], validatorPositions[i],
+                validatorPublicKeyMerkleProofs[i]), "Error: Validator must be in validator set at correct position"
+            );
 
-            // @note Take corresponding signatures, check if it is correct,
-            // ie. check if it matches the signature of validatorPublicKeys on the payload
-            // require(
-            //     ECDSA.recover(data.payload, signatures[i]) == validatorPublicKeys[i],
-            //     "Error: Invalid Signature"
-            // );
+            /**
+             * @dev Check if signature is correct
+             */
+            require(ECDSA.recover(payload, signatures[i]) == validatorPublicKeys[i], "Error: Invalid Signature");
         }
+
+        /**
+         * @todo Release the sender stake as collateral
+         */
+        // TODO
 
         /**
          * @follow-up Do we need a try-catch block here?
@@ -210,27 +226,18 @@ contract LightClientBridge {
      * @param data a storage reference to the validationData struct
      * @return onChainRandNums an array storing the random numbers generated inside this function
      */
-    function getRandomNumbers(ValidationData storage data, uint8 requiredNumberOfSamples)
+    function getSeed(ValidationData storage data)
         private
         view
-        returns (uint8[] memory onChainRandNums)
+        returns (uint256)
     {
-        // // @note Get payload.blocknumber, add BLOCK_WAIT_PERIOD
-        // uint256 randomSeedBlockNum = data.blockNumber.add(BLOCK_WAIT_PERIOD);
-        // // @note Create a hash seed from the block number
-        // bytes32 randomSeedBlockHash = blockhash(randomSeedBlockNum);
-        // //TODO: What happens if randomSeedBlockNum is too far in the past? Will we get an error/revert?
+        // @note Get payload.blocknumber, add BLOCK_WAIT_PERIOD
+        uint256 randomSeedBlockNum = data.blockNumber.add(BLOCK_WAIT_PERIOD);
+        // @note Create a hash seed from the block number
+        bytes32 randomSeedBlockHash = blockhash(randomSeedBlockNum);
+        //TODO: What happens if randomSeedBlockNum is too far in the past? Will we get an error/revert?
 
-        // /**
-        //  * @todo This is just a dummy random number generation process until the final implementation is known
-        //  */
-        // for (uint8 i = 0; i < requiredNumberOfSamples; i++) {
-        //     randomSeedBlockHash = keccak256(abi.encode(randomSeedBlockHash));
-        //     // @note Type conversion from bytes32 -> uint8, by way of bytes1 (to work around limitations)
-        //     onChainRandNums[i] = uint8(bytes1(randomSeedBlockHash));
-        // }
-        // // TODO this might lead to duplicate entries?
-
+        return uint256(randomSeedBlockHash);
     }
 
     /**

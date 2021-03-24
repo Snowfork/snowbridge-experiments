@@ -51,7 +51,7 @@ async function testFixture() {
  * Note: We can use Waffle's chai matchers here without explicitly
  * stating `chai.use(solidity)`
  */
-describe("LightClientBridge Contract", function () {
+describe.only("LightClientBridge Contract", function () {
   describe("constructor", function () {
     it("Should deploy the contract successfully", async function () {
       const { lightClientBridgeContract } = await testFixture()
@@ -231,23 +231,23 @@ describe("LightClientBridge Contract", function () {
 
       expect(await lightClientBridgeContract.currentId()).to.equal(1)
 
-      //TODO Generate randomSignatureBitfieldPositions properly
-      const randomSignatureBitfieldPositions: string[] = []
+      const sig1 = signatureSubstratToEthereum(justificationBlock2.justification.signatures[1])
 
-      // TODO Populate randomSignerAddresses and randomPublicKeyMerkleProofs and randomSignatureCommitments
-      // based on randomSignatureBitfieldPositions required
-      const randomValidatorAddresses: string[] = vals
-      const randomPublicKeyMerkleProofs: string[][] = []
-      const randomSignatureCommitments: string[] = justificationBlock2.justification.signatures
+      // TODO Populate validatorPublicKeys and validatorPublicKeyMerkleProofs and signatures
+      // based on randomSignatureBitfield
+      const signatures: string[] = [sig1]
+      const validatorPositions: number[] = [1]
+      const validatorPublicKeys: string[] = [vals[1]]
+      const validatorPublicKeyMerkleProofs: string[][] = [validatorPublicKeyMerkleProof1]
 
       const validationDataID = 0
       const completionResult = lightClientBridgeContract.completeSignatureCommitment(
         validationDataID,
         justificationBlock2.hashedCommitment,
-        randomSignatureCommitments,
-        randomSignatureBitfieldPositions,
-        randomValidatorAddresses,
-        randomPublicKeyMerkleProofs
+        signatures,
+        validatorPositions,
+        validatorPublicKeys,
+        validatorPublicKeyMerkleProofs
       )
       expect(completionResult).to.not.be.reverted
 
@@ -270,8 +270,8 @@ describe("LightClientBridge Contract", function () {
     it(
       "Should revert when a signature is randomly provided that was not in the validatorClaimsBitField when newSignatureCommitment was called"
     )
-    it("Should revert when a randomValidatorAddresses is not in in validatorRegistry given randomPublicKeyMerkleProofs")
-    it("Should revert when a randomValidatorAddresses is not signer of payload in randomSignatureCommitments")
+    it("Should revert when a validatorPublicKeys is not in in validatorRegistry given validatorPublicKeyMerkleProofs")
+    it("Should revert when a validatorPublicKeys is not signer of payload in signatures")
     it("Should revert when payload is not for the current validator set") // TODO is that not covered above? Do we need other test cases here?
     it("Should revert when payload is older than latest committed one") // TODO is that not covered above? Do we need other test cases here?
     it("Should revert when payload is not for a previous epoch") // TODO is that not covered above? Do we need other test cases here?
