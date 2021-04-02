@@ -144,6 +144,11 @@ contract LightClientBridge {
         ValidationData storage data = validationData[id];
 
         /**
+         * @dev verify that block wait period has passed
+         */
+        require(data.blockNumber.add(BLOCK_WAIT_PERIOD) >= block.number, "Error: Block wait period not over");
+
+        /**
          * @dev verify that sender is the same as in `newSignatureCommitment`
          */
         require(msg.sender == data.senderAddress, "Error: Sender address does not match original validation data");
@@ -237,7 +242,6 @@ contract LightClientBridge {
         uint256 randomSeedBlockNum = data.blockNumber.add(BLOCK_WAIT_PERIOD);
         // @note Create a hash seed from the block number
         bytes32 randomSeedBlockHash = blockhash(randomSeedBlockNum);
-        //TODO: What happens if randomSeedBlockNum is too far in the past? Will we get an error/revert?
 
         return uint256(randomSeedBlockHash);
     }

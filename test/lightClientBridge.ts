@@ -266,6 +266,7 @@ describe.only("LightClientBridge Contract", function () {
       // TODO add assertion for processPayload being called
     })
 
+    it("Should revert when block wait period is not yet over")
     it("Should revert when random signature positions are different (different bitfield)")
     it(
       "Should revert when a signature is randomly provided that was not in the validatorClaimsBitField when newSignatureCommitment was called"
