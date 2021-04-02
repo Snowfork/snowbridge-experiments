@@ -56,10 +56,9 @@ contract LightClientBridge {
 
     /* Constants */
 
-    uint256 public constant THRESHOLD_NOM = 2;
-    uint256 public constant THRESHOLD_DENOM = 3;
+    uint256 public constant THRESHOLD_NUMERATOR = 2;
+    uint256 public constant THRESHOLD_DENOMINATOR = 3;
     uint256 public constant BLOCK_WAIT_PERIOD = 45;
-    uint256 public constant MAXIMUM_NUM_SIGNERS = 167;
 
     /**
      * @notice Deploys the LightClientBridge contract
@@ -109,8 +108,8 @@ contract LightClientBridge {
         /**
          * @dev Check that the bitfield actually contains enough claims to be succesful, ie, > 2/3
          */
-        require(validatorClaimsBitfield.countSetBits() > validatorRegistry.numOfValidators() * THRESHOLD_NOM /
-            THRESHOLD_DENOM, "Error: Bitfield not enough validators");
+        require(validatorClaimsBitfield.countSetBits() > validatorRegistry.numOfValidators() * THRESHOLD_NUMERATOR /
+            THRESHOLD_DENOMINATOR, "Error: Bitfield not enough validators");
 
         /**
          * @todo Lock up the sender stake as collateral
@@ -149,7 +148,8 @@ contract LightClientBridge {
          */
         require(msg.sender == data.senderAddress, "Error: Sender address does not match original validation data");
 
-        uint256 requiredNumOfSignatures = validatorRegistry.numOfValidators() * THRESHOLD_NOM / THRESHOLD_DENOM;
+        uint256 requiredNumOfSignatures = validatorRegistry.numOfValidators() * THRESHOLD_NUMERATOR /
+            THRESHOLD_DENOMINATOR;
 
         /**
          * @dev verify that required number of signatures, positions, public keys and merkle proofs are
@@ -220,9 +220,11 @@ contract LightClientBridge {
     /* Private Functions */
 
     /**
-     * @notice Deterministically generates an array of numbers using the blockhash as a seed
-     * @dev Note that `blockhash(blockNum)` will only work for the 256 most recent blocks
-     * @dev Each generated number must be less than MAXIMUM_NUM_SIGNERS
+     * @notice Deterministically generates a seed from the block hash at the block number of creation of the validation
+     * data plus MAXIMUM_NUM_SIGNERS
+     * @dev Note that `blockhash(blockNum)` will only work for the 256 most recent blocks. If
+     * `completeSignatureCommitment` is called too late, a new call to `newSignatureCommitment` is necessary to reset
+     * validation data's block number
      * @param data a storage reference to the validationData struct
      * @return onChainRandNums an array storing the random numbers generated inside this function
      */

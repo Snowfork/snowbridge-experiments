@@ -1,9 +1,18 @@
 // "SPDX-License-Identifier: Apache-2.0"
+
+/**
+ * This contract shows gas cost and complexity of different operations on bitfields, mainly randomly setting bits in a
+ * bitfield and counting the number of set bits in a bitfield
+ */
 pragma solidity ^0.7.0;
 
 import "./utils/Bits.sol";
 
 contract BitfieldComparison {
+    /**
+     * Constants used to efficiently calculate the hamming weight of a bitfield. See
+     * https://en.wikipedia.org/wiki/Hamming_weight#Efficient_implementation for an explanation of those constants.
+     */
     uint256 internal constant M1 = 0x5555555555555555555555555555555555555555555555555555555555555555;
     uint256 internal constant M2 = 0x3333333333333333333333333333333333333333333333333333333333333333;
     uint256 internal constant M4  = 0x0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f;
@@ -12,7 +21,6 @@ contract BitfieldComparison {
     uint256 internal constant M32 = 0x00000000ffffffff00000000ffffffff00000000ffffffff00000000ffffffff;
     uint256 internal constant M64 = 0x0000000000000000ffffffffffffffff0000000000000000ffffffffffffffff;
     uint256 internal constant M128 = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
-    uint256 internal constant H01 = 0x0101010101010101010101010101010101010101010101010101010101010101;
 
     uint256 internal constant ONE = uint256(1);
     using Bits for uint256;
@@ -175,11 +183,15 @@ contract BitfieldComparison {
         return count;
     }
 
+    /**
+     * countSetBitsHammingWeight calculates the number of set bits by using the hamming weight of the bitfield.
+     * The alogrithm below is implemented after https://en.wikipedia.org/wiki/Hamming_weight#Efficient_implementation.
+     * Further improvements are possible, see the article above.
+     */
     function countSetBitsHammingWeight(uint256[] memory self) public pure returns (uint256) {
         uint256 count = 0;
         for (uint i = 0; i < self.length; i++) {
             uint256 x = self[i];
-
 
             x = (x & M1 ) + ((x >>  1) & M1 ); //put count of each  2 bits into those  2 bits
             x = (x & M2 ) + ((x >>  2) & M2 ); //put count of each  4 bits into those  4 bits

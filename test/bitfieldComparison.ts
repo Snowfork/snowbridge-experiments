@@ -1,3 +1,8 @@
+/**
+ * The tests in this file test contracts/BitfieldComparison.sol, which shows gas cost and complexity of different
+ * operations on bitfields, mainly randomly setting bits in a bitfield and counting the number of set bits in a bitfield
+ */
+
 import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { ethers } from "hardhat"
