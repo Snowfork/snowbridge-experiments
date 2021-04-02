@@ -1,10 +1,11 @@
 import { expect } from "chai"
 import web3 from "web3"
-import { ethers, waffle, artifacts } from "hardhat"
+import { ethers, waffle, artifacts, network } from "hardhat"
 import getMerkleTestData, { createMerkleTree } from "./data/merkleTestData"
 import { Bitfield, LightClientBridge, MerkleProof, ValidatorRegistry } from "../types"
 import { authoritySet0, justificationBlock2 } from "./lightClientBridgeFixtures"
 import { signatureSubstratToEthereum } from "../src/utils/signatureSubstratToEthereum"
+import { mineNBlocks } from "./utils/mineNBlocks"
 
 async function testFixture() {
   const valsMerkleTree = createMerkleTree(authoritySet0.authoritiesEthereum)
@@ -231,6 +232,9 @@ describe.only("LightClientBridge Contract", function () {
 
       expect(await lightClientBridgeContract.currentId()).to.equal(1)
 
+      // forward blocks so that block wait time check succeeds
+      await mineNBlocks(44)
+
       const sig1 = signatureSubstratToEthereum(justificationBlock2.justification.signatures[1])
 
       // TODO Populate validatorPublicKeys and validatorPublicKeyMerkleProofs and signatures
@@ -266,7 +270,60 @@ describe.only("LightClientBridge Contract", function () {
       // TODO add assertion for processPayload being called
     })
 
-    it("Should revert when block wait period is not yet over")
+    it("Should revert when block wait period is not yet over", async function () {
+      const { lightClientBridgeContract, validatorRegistryContract, vals, valsMerkleTree } = await testFixture()
+
+      const validatorClaimsBitfield = [3]
+
+      // Get validator leaves and proofs for each leaf
+      const leaf0 = valsMerkleTree.getLeaves()[0]
+      const validatorPublicKeyMerkleProof0 = valsMerkleTree.getHexProof(leaf0)
+      const leaf1 = valsMerkleTree.getLeaves()[1]
+      const validatorPublicKeyMerkleProof1 = valsMerkleTree.getHexProof(leaf1)
+
+      // Confirm validators are in fact part of validator set
+      expect(await validatorRegistryContract.checkValidatorInSet(vals[0], 0, validatorPublicKeyMerkleProof0)).to.be.true
+
+      expect(await validatorRegistryContract.checkValidatorInSet(vals[1], 1, validatorPublicKeyMerkleProof1)).to.be.true
+
+      const sig0 = signatureSubstratToEthereum(justificationBlock2.justification.signatures[0])
+
+      const result = lightClientBridgeContract.newSignatureCommitment(
+        justificationBlock2.hashedCommitment,
+        validatorClaimsBitfield,
+        sig0,
+        0,
+        vals[0] as any,
+        validatorPublicKeyMerkleProof0
+      )
+
+      expect(result).to.not.be.reverted
+
+      expect(await lightClientBridgeContract.currentId()).to.equal(1)
+
+      // forward blocks not enough so that block wait time check fails
+      await mineNBlocks(43)
+
+      const sig1 = signatureSubstratToEthereum(justificationBlock2.justification.signatures[1])
+
+      // TODO Populate validatorPublicKeys and validatorPublicKeyMerkleProofs and signatures
+      // based on randomSignatureBitfield
+      const signatures: string[] = [sig1]
+      const validatorPositions: number[] = [1]
+      const validatorPublicKeys: string[] = [vals[1]]
+      const validatorPublicKeyMerkleProofs: string[][] = [validatorPublicKeyMerkleProof1]
+
+      const validationDataID = 0
+      const completionResult = lightClientBridgeContract.completeSignatureCommitment(
+        validationDataID,
+        justificationBlock2.hashedCommitment,
+        signatures,
+        validatorPositions,
+        validatorPublicKeys,
+        validatorPublicKeyMerkleProofs
+      )
+      expect(completionResult).to.be.revertedWith("Error: Block wait period not over")
+    })
     it("Should revert when random signature positions are different (different bitfield)")
     it(
       "Should revert when a signature is randomly provided that was not in the validatorClaimsBitField when newSignatureCommitment was called"

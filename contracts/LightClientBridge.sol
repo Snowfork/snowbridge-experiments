@@ -146,7 +146,7 @@ contract LightClientBridge {
         /**
          * @dev verify that block wait period has passed
          */
-        require(data.blockNumber.add(BLOCK_WAIT_PERIOD) >= block.number, "Error: Block wait period not over");
+        require(block.number >= data.blockNumber.add(BLOCK_WAIT_PERIOD), "Error: Block wait period not over");
 
         /**
          * @dev verify that sender is the same as in `newSignatureCommitment`
