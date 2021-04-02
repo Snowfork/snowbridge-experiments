@@ -2,7 +2,6 @@
 pragma solidity ^0.7.0;
 
 /**
- *
  * @dev MMRVerification library for MMR inclusion proofs generated
  *      by https://github.com/nervosnetwork/merkle-mountain-range.
 

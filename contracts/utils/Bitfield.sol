@@ -5,7 +5,7 @@ import "./Bits.sol";
 
 library Bitfield {
     /**
-     * Constants used to efficiently calculate the hamming weight of a bitfield. See
+     * @dev Constants used to efficiently calculate the hamming weight of a bitfield. See
      * https://en.wikipedia.org/wiki/Hamming_weight#Efficient_implementation for an explanation of those constants.
      */
     uint256 internal constant M1 = 0x5555555555555555555555555555555555555555555555555555555555555555;
@@ -21,8 +21,8 @@ library Bitfield {
     using Bits for uint256;
 
     /**
-     * Draws a random number, derives an index in the bitfield, and sets the bit if it is in the `prior` and not yet
-     * set. Repeats that `n` times.
+     * @notice Draws a random number, derives an index in the bitfield, and sets the bit if it is in the `prior` and not
+     * yet set. Repeats that `n` times.
      */
     function randomNBitsFromPrior(uint256 seed, uint256[] memory prior, uint n)
         public
@@ -58,7 +58,7 @@ library Bitfield {
     }
 
     /**
-     * Calculates the number of set bits by using the hamming weight of the bitfield.
+     * @notice Calculates the number of set bits by using the hamming weight of the bitfield.
      * The alogrithm below is implemented after https://en.wikipedia.org/wiki/Hamming_weight#Efficient_implementation.
      * Further improvements are possible, see the article above.
      */

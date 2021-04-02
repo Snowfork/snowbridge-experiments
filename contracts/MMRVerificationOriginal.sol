@@ -2,15 +2,16 @@
 pragma solidity ^0.7.0;
 
 /**
-    The assumed MMR data structure on Substrate is from https://github.com/paritytech/substrate/pull/7312/files,
-    with some slight modifications for gas optimization (merkle root of ParaHeads, adding Option<H256> pub key root):
-
-    MMRLeaf {
-        H256 (Polkadot block header hash)
-        H256 (root of merkle tree of `ParaHead`s)
-        H256 (root of merkle tree of BridgeMessage)
-        Option<H256> (merkle root of a tree of new validator pubkey)
-    }
+ * @dev
+ *  The assumed MMR data structure on Substrate is from https://github.com/paritytech/substrate/pull/7312/files,
+ *  with some slight modifications for gas optimization (merkle root of ParaHeads, adding Option<H256> pub key root):
+ *
+ *  MMRLeaf {
+ *      H256 (Polkadot block header hash)
+ *      H256 (root of merkle tree of `ParaHead`s)
+ *      H256 (root of merkle tree of BridgeMessage)
+ *      Option<H256> (merkle root of a tree of new validator pubkey)
+ *  }
  */
 
 abstract contract MMRVerificationOriginal {

@@ -10,7 +10,7 @@ import "./utils/Bits.sol";
 
 contract BitfieldComparison {
     /**
-     * Constants used to efficiently calculate the hamming weight of a bitfield. See
+     * @dev Constants used to efficiently calculate the hamming weight of a bitfield. See
      * https://en.wikipedia.org/wiki/Hamming_weight#Efficient_implementation for an explanation of those constants.
      */
     uint256 internal constant M1 = 0x5555555555555555555555555555555555555555555555555555555555555555;
@@ -58,7 +58,7 @@ contract BitfieldComparison {
     }
 
     /**
-     * Counts the number of set bits in the `prior`, then draws a random number lower than that count, finds the
+     * @notice Counts the number of set bits in the `prior`, then draws a random number lower than that count, finds the
      * corresponding index, and sets it to true. Repeats that `n` times.
      */
     function randomNBitsFromPriorCounting(uint256 seed, uint256[] memory prior, uint n)
@@ -89,7 +89,7 @@ contract BitfieldComparison {
     }
 
     /**
-     * Draws a random number, derives an index in the bitfield, and sets the bit if it is in the `prior` and not yet
+     * @notice Draws a random number, derives an index in the bitfield, and sets the bit if it is in the `prior` and not yet
      * set. Repeats that `n` times.
      */
     function randomNBitsFromPriorRejectionSampling(uint256 seed, uint256[] memory prior, uint n)
@@ -126,7 +126,7 @@ contract BitfieldComparison {
     }
 
     /**
-     * Notice that `n` here is starting at `1`, meaning that in a bitfield 0100 the `n = 1` index would be `2` (starting
+     * @notice Notice that `n` here is starting at `1`, meaning that in a bitfield 0100 the `n = 1` index would be `2` (starting
      * from right)
      */
     function indexOfNthSetBit(uint256[] memory self, uint n) public pure returns (uint256) {
@@ -184,7 +184,7 @@ contract BitfieldComparison {
     }
 
     /**
-     * countSetBitsHammingWeight calculates the number of set bits by using the hamming weight of the bitfield.
+     * @notice countSetBitsHammingWeight calculates the number of set bits by using the hamming weight of the bitfield.
      * The alogrithm below is implemented after https://en.wikipedia.org/wiki/Hamming_weight#Efficient_implementation.
      * Further improvements are possible, see the article above.
      */
