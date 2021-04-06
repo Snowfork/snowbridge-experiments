@@ -1,0 +1,13 @@
+# folders
+.vscode
+artifacts/
+cache/
+contracts/
+node_modules/
+dist/
+lib/
+types/
+
+# files
+.solcover.js
+coverage.json

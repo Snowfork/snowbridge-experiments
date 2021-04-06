@@ -1,16 +1,8 @@
-const { keccak } = require("ethereumjs-util")
+import { ethers } from "ethers"
 
-/**
- * @param {Buffer} x
- * @returns string
- */
-const buf2hex = x => "0x" + x.toString("hex")
+const buf2hex = (x: Buffer): string => "0x" + x.toString("hex")
 
-/**
- * @param {string} x
- * @returns Buffer
- */
-const hex2buf = x => Buffer.from(x.slice(2), "hex")
+const hex2buf = (x: string): Buffer => Buffer.from(x.slice(2), "hex")
 
 /**
  * Returns the root value of a given Merkle Tree,
@@ -18,7 +10,7 @@ const hex2buf = x => Buffer.from(x.slice(2), "hex")
  * @param {string[]} leaves
  * @returns string
  */
-function getMerkleRoot(leaves) {
+function getMerkleRoot(leaves: string[]): string {
   if (leaves.length > 1) {
     if (leaves.length % 2 !== 0) {
       leaves.push(leaves[leaves.length - 1])
@@ -36,9 +28,4 @@ function getMerkleRoot(leaves) {
   }
 }
 
-module.exports = {
-  buf2hex,
-  hex2buf,
-  getMerkleRoot,
-  keccak,
-}
+export { buf2hex, hex2buf, getMerkleRoot }

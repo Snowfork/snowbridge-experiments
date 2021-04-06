@@ -2,15 +2,16 @@
 pragma solidity ^0.7.0;
 
 /**
-    The assumed MMR data structure on Substrate is from https://github.com/paritytech/substrate/pull/7312/files,
-    with some slight modifications for gas optimization (merkle root of ParaHeads, adding Option<H256> pub key root):
-
-    MMRLeaf {
-        H256 (Polkadot block header hash)
-        H256 (root of merkle tree of `ParaHead`s)
-        H256 (root of merkle tree of BridgeMessage)
-        Option<H256> (merkle root of a tree of new validator pubkey)
-    }
+ * @dev
+ *  The assumed MMR data structure on Substrate is from https://github.com/paritytech/substrate/pull/7312/files,
+ *  with some slight modifications for gas optimization (merkle root of ParaHeads, adding Option<H256> pub key root):
+ *
+ *  MMRLeaf {
+ *      H256 (Polkadot block header hash)
+ *      H256 (root of merkle tree of `ParaHead`s)
+ *      H256 (root of merkle tree of BridgeMessage)
+ *      Option<H256> (merkle root of a tree of new validator pubkey)
+ *  }
  */
 
 abstract contract MMRVerificationOriginal {
@@ -31,7 +32,7 @@ abstract contract MMRVerificationOriginal {
         bytes32 newMmrRoot,
         bytes32[] memory signatures,
         uint8[] memory bitmap
-    ) virtual public returns (bool);
+    ) public virtual returns (bool);
 
     /**
      * @dev Updates the current MMR root and updates the validator set. Called instead of
@@ -48,17 +49,14 @@ abstract contract MMRVerificationOriginal {
         uint8[] memory bitmap,
         bytes32[] memory valPubKeys,
         bytes32[] memory pubKeyProof
-    ) virtual public returns(bool);
+    ) public virtual returns (bool);
 
     /**
      * @dev Updates the set of validator public keys stored on contract.
      * @param valPubKeys new validator public keys.
      * @param pubKeyProof merkle proof of the new validator public keys in the MMR.
      */
-    function updateValSet(
-        bytes32[] memory valPubKeys,
-        bytes32[] memory pubKeyProof
-    ) virtual internal returns (bool);
+    function updateValSet(bytes32[] memory valPubKeys, bytes32[] memory pubKeyProof) internal virtual returns (bool);
 
     /**
      * @dev Validate that a set of messages is contained and executes them.
@@ -74,5 +72,5 @@ abstract contract MMRVerificationOriginal {
         bytes32[] memory paraHeadSiblingsProof,
         bytes32[] memory messages,
         bytes32[] memory mmrSiblingsProof
-    ) virtual public;
+    ) public virtual;
 }

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "lib": ["es2020"],
+    "target": "es2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "pretty": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "alwaysStrict": true,
+    "noImplicitAny": true,
+    "removeComments": false,
+    "composite": true,
+    "incremental": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": "."
+  },
+  "exclude": ["node_modules"],
+  "include": ["src/**/*", "test/**/*", "types/**/*", "hardhat.config.ts"]
+}

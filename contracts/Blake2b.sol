@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.22 <0.8.0;
+pragma solidity ^0.7.0;
 
 contract ExampleBlake2B {
     function F(
@@ -11,23 +11,10 @@ contract ExampleBlake2B {
     ) public view returns (bytes32[2] memory) {
         bytes32[2] memory output;
 
-        bytes memory args = abi.encodePacked(
-            rounds,
-            h[0],
-            h[1],
-            m[0],
-            m[1],
-            m[2],
-            m[3],
-            t[0],
-            t[1],
-            f
-        );
+        bytes memory args = abi.encodePacked(rounds, h[0], h[1], m[0], m[1], m[2], m[3], t[0], t[1], f);
 
         assembly {
-            if iszero(
-                staticcall(not(0), 0x09, add(args, 32), 0xd5, output, 0x40)
-            ) {
+            if iszero(staticcall(not(0), 0x09, add(args, 32), 0xd5, output, 0x40)) {
                 revert(0, 0)
             }
         }

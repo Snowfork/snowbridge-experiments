@@ -1,5 +1,9 @@
 /node_modules*
 /build
+/dist
 /artifacts
+/types
 /cache
+/.vscode
 yarn-error.log
+.DS_Store
