@@ -45,7 +45,7 @@ contract Blake2bConsenSys {
         uint256 d,
         uint64 x,
         uint64 y
-    ) public view {
+    ) public pure {
         // Dereference to decrease memory reads
         uint64 va = v[a];
         uint64 vb = v[b];
@@ -252,7 +252,6 @@ contract Blake2bConsenSys {
         ctx.h[7] = ctx.h[7] ^ person[1];
 
         ctx.outlen = outlen;
-        uint256 i = key.length;
 
         //Run hash once with key as input
         if (key.length > 0) {
@@ -330,7 +329,7 @@ contract Blake2bConsenSys {
     // Utility functions
 
     //Flips endianness of words
-    function getWords(uint64 a) public view returns (uint64 b) {
+    function getWords(uint64 a) public pure returns (uint64 b) {
         return
             ((a & MASK_0) / SHIFT_0) ^
             ((a & MASK_1) / SHIFT_1) ^
@@ -342,16 +341,16 @@ contract Blake2bConsenSys {
             ((a & MASK_7) * SHIFT_0);
     }
 
-    function shift_right(uint64 a, uint256 shift) public view returns (uint64 b) {
+    function shift_right(uint64 a, uint256 shift) public pure returns (uint64 b) {
         return uint64(a / 2**shift);
     }
 
-    function shift_left(uint64 a, uint256 shift) public view returns (uint64) {
+    function shift_left(uint64 a, uint256 shift) public pure returns (uint64) {
         return uint64((a * 2**shift) % (2**64));
     }
 
     //bytes -> uint64[2]
-    function formatInput(bytes memory input) public view returns (uint64[2] memory output) {
+    function formatInput(bytes memory input) public pure returns (uint64[2] memory output) {
         for (uint256 i = 0; i < input.length; i++) {
             output[i / 8] = output[i / 8] ^ shift_left(uint64(uint8(input[i])), 64 - 8 * ((i % 8) + 1));
         }
@@ -359,7 +358,7 @@ contract Blake2bConsenSys {
         output[1] = getWords(output[1]);
     }
 
-    function formatOutput(uint64[8] memory input) public view returns (bytes32[2] memory) {
+    function formatOutput(uint64[8] memory input) public pure returns (bytes32[2] memory) {
         bytes32[2] memory result;
 
         for (uint256 i = 0; i < 8; i++) {
