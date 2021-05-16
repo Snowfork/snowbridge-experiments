@@ -21,7 +21,7 @@ const taskSetup = async (hre: HardhatRuntimeEnvironment) => {
 }
 
 task("gasUsage")
-  .setDescription("Prints out the gas usage for each of the verification functions")
+  .setDescription("Prints out the gas usage for each of the merkle proof verification functions")
   .setAction(async (_, { run }) => {
     await run("verifyMessageArray")
     await run("verifyMerkleLeaf")

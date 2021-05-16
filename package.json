@@ -56,7 +56,8 @@
     "prettier": "prettier --config .prettierrc.json --write .",
     "prettier:check": "prettier --config .prettierrc.json --check .",
     "test": "hardhat test",
-    "gasUsage": "hardhat gasUsage",
+    "gasUsageHashing": "hardhat gasUsageHashing",
+    "gasUsageMerkleProof": "hardhat gasUsageMerkleProof",
     "typechain": "hardhat typechain"
   },
   "repository": {
