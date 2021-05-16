@@ -19,7 +19,7 @@ describe("Blake2bConsensys", function () {
   })
 
   describe("hash", function () {
-    it.only("should work", async function () {
+    it("should work", async function () {
       // test vectors from https://github.com/BLAKE2/BLAKE2/tree/master/testvectors
 
       // expect(
