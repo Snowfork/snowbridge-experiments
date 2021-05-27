@@ -3,7 +3,7 @@ import { ethers } from "hardhat"
 import { Blake2bAxic } from "../types"
 // import blake2TestVectors from "./blake2-kat.json"
 
-describe("Blake2b", function () {
+describe("Blake2bAxic", function () {
   let blake2b: Blake2bAxic
 
   beforeEach(async function () {
@@ -19,7 +19,7 @@ describe("Blake2b", function () {
   })
 
   describe("hash", function () {
-    it.only("should work", async function () {
+    it.skip("should work", async function () {
       // test vectors from https://github.com/BLAKE2/BLAKE2/tree/master/testvectors
 
       // expect(
