@@ -11,9 +11,9 @@ import "hardhat-watcher"
 
 /**
  * Import Custom Tasks
- * @note This task calculates gas usage for the verification functions
  */
-import "./src/tasks/gasUsage"
+import "./src/tasks/gasUsageHashing"
+import "./src/tasks/gasUsageMerkleProof"
 
 /**
  * Import private keys from file (for test purposes)
